@@ -105,7 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         y = min(max(y, bounds.minY + 4), bounds.maxY - size - 4)
 
         panel.setFrame(NSRect(x: x, y: y, width: size, height: size), display: true)
-        panel.present(isChatGPTActive: state.isChatGPTActive)
+        panel.present(aboveChatGPTWindowID: state.windowID)
     }
 
     /// CGWindow/AX use Quartz global coordinates (origin at the top-left of the
