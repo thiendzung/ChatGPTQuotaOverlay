@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3.4
+
+- Centralize widget placement in a named avatar/rail anchor geometry model.
+- Keep the quota widget fixed relative to ChatGPT's profile-avatar zone.
+- Make Accessibility AXObserver move/resize callbacks the primary realtime drag/resize tracking path.
+- Keep the no-Accessibility fallback event-driven; no recurring polling.
+- Clarify the right-click menu with `Live tracking: On` / `Live tracking: Off — Enable…`.
+- Explicitly avoid traversing or reading ChatGPT's avatar/profile UI element.
+- Add anchor-geometry regression tests.
+- Preserve the v0.1.3.3 focus-ordering and relaunch behavior.
+
+
 ## 0.1.3.3
 
 - Fix the overlay disappearing when focus moves from ChatGPT to another app.
