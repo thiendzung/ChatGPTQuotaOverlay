@@ -363,7 +363,7 @@ final class ChatGPTWindowTracker {
     private func detachAXObserver() {
         removeObservedWindowNotifications()
 
-        if let observer {
+        if let observer = axObserver {
             if let appElement = axAppElement {
                 _ = AXObserverRemoveNotification(
                     observer,
