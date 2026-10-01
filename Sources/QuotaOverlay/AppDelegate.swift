@@ -94,17 +94,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let size = OverlayPanel.preferredSize.width
-        let railCenterX = appKitFrame.minX + 27
-        var x = railCenterX - size / 2
-        var y = appKitFrame.minY + 57
+        var quotaFrame = SidebarAnchorGeometry.quotaFrame(
+            chatGPTFrame: appKitFrame,
+            quotaSize: size
+        )
 
         // Clamp only to the physical screen, not visibleFrame. In ChatGPT full
         // screen the Dock/menu-bar insets should not push the overlay inward.
         let bounds = screen.frame
-        x = min(max(x, bounds.minX + 4), bounds.maxX - size - 4)
-        y = min(max(y, bounds.minY + 4), bounds.maxY - size - 4)
+        quotaFrame.origin.x = min(
+            max(quotaFrame.origin.x, bounds.minX + 4),
+            bounds.maxX - size - 4
+        )
+        quotaFrame.origin.y = min(
+            max(quotaFrame.origin.y, bounds.minY + 4),
+            bounds.maxY - size - 4
+        )
 
-        panel.setFrame(NSRect(x: x, y: y, width: size, height: size), display: true)
+        panel.setFrame(quotaFrame, display: true)
         panel.present(
             aboveChatGPTWindowID: state.windowID,
             isChatGPTActive: state.isChatGPTActive
