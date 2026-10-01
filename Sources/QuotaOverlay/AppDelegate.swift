@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let networkWatcher = NetworkReachabilityWatcher()
     private let launchAtLogin = LaunchAtLoginController()
     private var wakeObserver: NSObjectProtocol?
+    private var presentedWindowID: CGWindowID?
+    private var presentedChatGPTActive: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -84,6 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyWindowState(_ state: ChatGPTWindowState?) {
         guard let state else {
             panel.orderOut(nil)
+            presentedWindowID = nil
+            presentedChatGPTActive = nil
             return
         }
 
@@ -94,21 +98,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let size = OverlayPanel.preferredSize.width
-        let railCenterX = appKitFrame.minX + 27
-        var x = railCenterX - size / 2
-        var y = appKitFrame.minY + 57
+        var quotaFrame = SidebarAnchorGeometry.quotaFrame(
+            chatGPTFrame: appKitFrame,
+            quotaSize: size
+        )
 
         // Clamp only to the physical screen, not visibleFrame. In ChatGPT full
         // screen the Dock/menu-bar insets should not push the overlay inward.
         let bounds = screen.frame
-        x = min(max(x, bounds.minX + 4), bounds.maxX - size - 4)
-        y = min(max(y, bounds.minY + 4), bounds.maxY - size - 4)
-
-        panel.setFrame(NSRect(x: x, y: y, width: size, height: size), display: true)
-        panel.present(
-            aboveChatGPTWindowID: state.windowID,
-            isChatGPTActive: state.isChatGPTActive
+        quotaFrame.origin.x = min(
+            max(quotaFrame.origin.x, bounds.minX + 4),
+            bounds.maxX - size - 4
         )
+        quotaFrame.origin.y = min(
+            max(quotaFrame.origin.y, bounds.minY + 4),
+            bounds.maxY - size - 4
+        )
+
+        panel.setFrame(quotaFrame, display: true)
+
+        // AX move/resize events can arrive rapidly while the user drags the
+        // ChatGPT window. Reordering WindowServer on every frame causes visible
+        // jitter, so z-order is reasserted only when the target/focus/visibility
+        // state actually changes. Frame movement itself remains immediate.
+        let needsPresentation =
+            presentedWindowID != state.windowID
+            || presentedChatGPTActive != state.isChatGPTActive
+            || !panel.isVisible
+
+        if needsPresentation {
+            panel.present(
+                aboveChatGPTWindowID: state.windowID,
+                isChatGPTActive: state.isChatGPTActive
+            )
+            presentedWindowID = state.windowID
+            presentedChatGPTActive = state.isChatGPTActive
+        }
     }
 
     /// CGWindow/AX use Quartz global coordinates (origin at the top-left of the

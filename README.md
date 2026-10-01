@@ -1,4 +1,4 @@
-# ChatGPT Quota Overlay v0.1.3.3
+# ChatGPT Quota Overlay v0.1.3.4
 
 **built by ThienDzung**
 
@@ -13,29 +13,31 @@ A small local macOS companion for ChatGPT Desktop that shows remaining Codex quo
 - Cached/stale quota is deliberately dimmed and the hover text adds \`cached\`.
 - No usable quota data: \`— / —\`.
 
-## v0.1.3.3
+## v0.1.3.4
 
-This hotfix focuses on the two lifecycle problems found during real macOS use: losing the overlay when another app becomes active, and failing to reattach after ChatGPT is quit/reopened.
+v0.1.3.4 makes the widget behave like a stable companion to the account/avatar zone.
 
-- The overlay is now ordered directly above the tracked ChatGPT window instead of switching between normal/floating levels.
-- Other applications can still sit above ChatGPT and the overlay naturally.
-- ChatGPT launch/activate/unhide events trigger bounded one-shot settle callbacks so the overlay can reattach after the new window reaches WindowServer.
-- No continuous polling loop is introduced.
+- Placement is defined by a single named avatar-rail anchor model instead of scattered pixel offsets.
+- The widget remains positioned relative to ChatGPT's left rail and profile-avatar zone.
+- With Accessibility enabled, AXObserver move/resize callbacks are the primary live-tracking path, so dragging or resizing ChatGPT moves the widget immediately without polling.
+- Without Accessibility, the app keeps its lower-permission fallback and repositions on normal macOS app/Space/screen lifecycle events.
+- The overlay does not traverse ChatGPT's accessibility tree to find or read the avatar/profile control itself.
+- The right-click menu now shows `Live tracking: On` or `Live tracking: Off — Enable…`.
 
-The v0.1.3.2 reliability, permissions, Start at Login, CI, and release hardening remain in place.
+All v0.1.3.3 focus/relaunch fixes remain in place.
 
 ### Window behavior
 
-- Switching to another app no longer hides the widget just because ChatGPT lost focus.
-- When ChatGPT is active, the overlay uses a floating level so it stays above ChatGPT.
-- When another app becomes active, the overlay drops to normal level so that app can cover it naturally.
+- Switching to another app does not hide the widget just because ChatGPT lost focus.
+- The overlay stays immediately above the tracked ChatGPT window in WindowServer order.
+- Another active app can still cover ChatGPT and the overlay naturally.
 - Minimized, hidden, closed, off-Space, or terminated ChatGPT windows are hidden when their state can be observed.
 - Active Space changes are handled as events; no window polling loop is used.
 - Multi-monitor coordinates are converted using the primary display as the Quartz/AppKit flip axis.
 - Multiple ChatGPT windows are supported: the active/topmost ChatGPT window is preferred, while the last tracked visible window is retained when another app becomes active.
 - Full-screen ChatGPT remains supported through the auxiliary full-screen panel behavior.
 
-Without Accessibility permission, window state is refreshed on macOS app/Space/screen lifecycle events. Enabling live window tracking adds exact move, resize, focus, minimize, restore, and window-destroy events.
+Without Accessibility permission, window state is refreshed on macOS app/Space/screen lifecycle events. For smooth realtime dragging/resizing, right-click the quota widget and enable **Live tracking**. Accessibility then supplies exact move, resize, focus, minimize, restore, and window-destroy callbacks.
 
 ### Quota freshness
 
@@ -75,7 +77,7 @@ GitHub Actions now verifies on macOS:
 
 Tags matching \`v*\` run a release workflow that builds the app, creates a macOS ZIP, writes a SHA-256 file, and publishes a GitHub Release.
 
-There is intentionally **no in-app auto-updater** in v0.1.3.2.
+There is intentionally **no in-app auto-updater**.
 
 ## Real quota source
 
@@ -105,7 +107,7 @@ Accessibility is used only to observe the selected ChatGPT window's:
 - minimize / restore;
 - destruction.
 
-The app does not read UI text, keystrokes, messages, or controls.
+The app does not read UI text, the account avatar element, keystrokes, messages, or controls. It reads only top-level window position/size metadata needed to keep the quota panel attached to the avatar zone.
 
 Not required:
 

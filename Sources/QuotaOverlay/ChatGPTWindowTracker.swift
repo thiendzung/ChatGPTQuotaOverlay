@@ -11,8 +11,9 @@ struct ChatGPTWindowState: Equatable {
 ///
 /// Without Accessibility permission, CGWindowList is sampled only when macOS
 /// reports an application/Space/screen lifecycle event. With Accessibility,
-/// the focused ChatGPT window also emits move/resize/minimize/focus events.
-/// No recurring polling loop is used.
+/// AXObserver is the primary live-tracking path: the focused ChatGPT window
+/// emits move/resize/minimize/focus/destroy events and the overlay follows the
+/// window frame directly. No recurring polling loop is used.
 final class ChatGPTWindowTracker {
     var onStateChange: ((ChatGPTWindowState?) -> Void)?
     var onChatGPTActivated: (() -> Void)?
@@ -309,7 +310,9 @@ final class ChatGPTWindowTracker {
             let name = notification as String
 
             if name == kAXMovedNotification as String || name == kAXResizedNotification as String {
-                tracker.emitAXFrame()
+                // Hot path while ChatGPT is being dragged or resized. Read only
+                // top-level AX frame metadata and deliver it immediately.
+                tracker.emitAXFrame(force: true)
                 return
             }
 
@@ -437,7 +440,7 @@ final class ChatGPTWindowTracker {
         observedPID = nil
     }
 
-    private func emitAXFrame() {
+    private func emitAXFrame(force: Bool = false) {
         guard let window = observedWindow else {
             refreshWindowState()
             return
@@ -479,11 +482,14 @@ final class ChatGPTWindowTracker {
         }
 
         let isActive = NSWorkspace.shared.frontmostApplication?.processIdentifier == targetPID
-        emit(ChatGPTWindowState(
-            frame: CGRect(origin: position, size: size),
-            windowID: windowID,
-            isChatGPTActive: isActive
-        ))
+        emit(
+            ChatGPTWindowState(
+                frame: CGRect(origin: position, size: size),
+                windowID: windowID,
+                isChatGPTActive: isActive
+            ),
+            force: force
+        )
     }
 
     private func emit(_ state: ChatGPTWindowState?, force: Bool = false) {

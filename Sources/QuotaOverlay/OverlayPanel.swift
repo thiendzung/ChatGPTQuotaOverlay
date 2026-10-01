@@ -392,8 +392,8 @@ final class OverlayPanel: NSPanel {
 
         let accessibilityEnabled = accessibilityEnabledProvider?() ?? false
         let accessibilityTitle = accessibilityEnabled
-            ? "Live window tracking: On"
-            : "Enable live window tracking…"
+            ? "Live tracking: On"
+            : "Live tracking: Off — Enable…"
         let accessibility = NSMenuItem(
             title: accessibilityTitle,
             action: accessibilityEnabled ? nil : #selector(MenuActionTarget.requestAccessibility(_:)),
@@ -402,6 +402,16 @@ final class OverlayPanel: NSPanel {
         accessibility.target = accessibilityEnabled ? nil : menuTarget
         accessibility.isEnabled = !accessibilityEnabled
         menu.addItem(accessibility)
+
+        if !accessibilityEnabled {
+            let explanation = NSMenuItem(
+                title: "Realtime window dragging requires Accessibility",
+                action: nil,
+                keyEquivalent: ""
+            )
+            explanation.isEnabled = false
+            menu.addItem(explanation)
+        }
 
         let launchState = launchAtLoginStateProvider?() ?? .unavailable
         switch launchState {
