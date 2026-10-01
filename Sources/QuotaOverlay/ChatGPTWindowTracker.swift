@@ -140,10 +140,12 @@ final class ChatGPTWindowTracker {
             scheduleSettledRescans(delays: [0.18, 0.65])
         }
 
-        refreshWindowState()
+        refreshWindowState(
+            forceEmit: notification.name == NSWorkspace.didActivateApplicationNotification
+        )
     }
 
-    private func refreshWindowState() {
+    private func refreshWindowState(forceEmit: Bool = false) {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let frontmostChatGPT = frontmost.flatMap { isChatGPT($0) ? $0 : nil }
 
@@ -211,11 +213,14 @@ final class ChatGPTWindowTracker {
 
         targetWindowID = selected.id
         cancelSettledRescans()
-        emit(ChatGPTWindowState(
-            frame: selected.frame,
-            windowID: selected.id,
-            isChatGPTActive: isActive
-        ))
+        emit(
+            ChatGPTWindowState(
+                frame: selected.frame,
+                windowID: selected.id,
+                isChatGPTActive: isActive
+            ),
+            force: forceEmit
+        )
 
         if trusted {
             attachFocusedWindowNotifications(for: app)
@@ -481,8 +486,8 @@ final class ChatGPTWindowTracker {
         ))
     }
 
-    private func emit(_ state: ChatGPTWindowState?) {
-        guard state != lastState else { return }
+    private func emit(_ state: ChatGPTWindowState?, force: Bool = false) {
+        guard force || state != lastState else { return }
         lastState = state
         onStateChange?(state)
     }
