@@ -27,6 +27,7 @@ final class ChatGPTWindowTracker {
 
     private var workspaceObservers: [NSObjectProtocol] = []
     private var screenObserver: NSObjectProtocol?
+    private var settledRescanWorkItems: [DispatchWorkItem] = []
 
     private var axObserver: AXObserver?
     private var axAppElement: AXUIElement?
@@ -77,6 +78,7 @@ final class ChatGPTWindowTracker {
             NotificationCenter.default.removeObserver(screenObserver)
         }
         screenObserver = nil
+        cancelSettledRescans()
 
         detachAXObserver()
         targetPID = nil
@@ -100,25 +102,50 @@ final class ChatGPTWindowTracker {
     deinit { stop() }
 
     private func handleWorkspaceEvent(_ notification: Notification) {
+        let eventApp = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+        let isChatGPTEvent = eventApp.map(isChatGPT) ?? false
+
         if notification.name == NSWorkspace.didTerminateApplicationNotification,
-           let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+           let app = eventApp,
            app.processIdentifier == targetPID {
             targetPID = nil
             targetWindowID = nil
+            cancelSettledRescans()
             detachAXObserver()
         }
 
-        if notification.name == NSWorkspace.didActivateApplicationNotification,
-           let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-           isChatGPT(app) {
+        if isChatGPTEvent,
+           let app = eventApp,
+           notification.name == NSWorkspace.didLaunchApplicationNotification
+            || notification.name == NSWorkspace.didActivateApplicationNotification
+            || notification.name == NSWorkspace.didUnhideApplicationNotification {
             targetPID = app.processIdentifier
+        }
+
+        if notification.name == NSWorkspace.didActivateApplicationNotification,
+           isChatGPTEvent {
             onChatGPTActivated?()
         }
 
-        refreshWindowState()
+        // ChatGPT can emit launch/activate before its first normal window is
+        // registered with WindowServer. Schedule a small, bounded set of
+        // callback-based settle checks. These are not a recurring polling loop
+        // and are cancelled as soon as a usable ChatGPT window appears.
+        if isChatGPTEvent,
+           notification.name == NSWorkspace.didLaunchApplicationNotification
+            || notification.name == NSWorkspace.didActivateApplicationNotification
+            || notification.name == NSWorkspace.didUnhideApplicationNotification {
+            scheduleSettledRescans()
+        } else if notification.name == NSWorkspace.activeSpaceDidChangeNotification {
+            scheduleSettledRescans(delays: [0.18, 0.65])
+        }
+
+        refreshWindowState(
+            forceEmit: notification.name == NSWorkspace.didActivateApplicationNotification
+        )
     }
 
-    private func refreshWindowState() {
+    private func refreshWindowState(forceEmit: Bool = false) {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let frontmostChatGPT = frontmost.flatMap { isChatGPT($0) ? $0 : nil }
 
@@ -185,15 +212,37 @@ final class ChatGPTWindowTracker {
         }
 
         targetWindowID = selected.id
-        emit(ChatGPTWindowState(
-            frame: selected.frame,
-            windowID: selected.id,
-            isChatGPTActive: isActive
-        ))
+        cancelSettledRescans()
+        emit(
+            ChatGPTWindowState(
+                frame: selected.frame,
+                windowID: selected.id,
+                isChatGPTActive: isActive
+            ),
+            force: forceEmit
+        )
 
         if trusted {
             attachFocusedWindowNotifications(for: app)
         }
+    }
+
+    private func scheduleSettledRescans(delays: [TimeInterval] = [0.20, 0.80, 1.80]) {
+        cancelSettledRescans()
+
+        settledRescanWorkItems = delays.map { delay in
+            let item = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                self.refreshWindowState()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
+            return item
+        }
+    }
+
+    private func cancelSettledRescans() {
+        settledRescanWorkItems.forEach { $0.cancel() }
+        settledRescanWorkItems.removeAll()
     }
 
     private func isChatGPT(_ app: NSRunningApplication) -> Bool {
@@ -437,8 +486,8 @@ final class ChatGPTWindowTracker {
         ))
     }
 
-    private func emit(_ state: ChatGPTWindowState?) {
-        guard state != lastState else { return }
+    private func emit(_ state: ChatGPTWindowState?, force: Bool = false) {
+        guard force || state != lastState else { return }
         lastState = state
         onStateChange?(state)
     }

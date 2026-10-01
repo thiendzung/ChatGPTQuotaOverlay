@@ -297,21 +297,31 @@ final class OverlayPanel: NSPanel {
         }
     }
 
-    func setChatGPTActive(_ active: Bool) {
-        level = active ? .floating : .normal
-        if tooltipPanel.isVisible {
-            tooltipPanel.level = level
+    /// Keep the overlay immediately above the target ChatGPT window in the
+    /// WindowServer z-order instead of changing levels when app focus changes.
+    /// This prevents the panel from sinking behind ChatGPT on deactivation,
+    /// while a newly active application can still remain above both windows.
+    func present(
+        aboveChatGPTWindowID windowID: CGWindowID,
+        isChatGPTActive: Bool
+    ) {
+        guard windowID != kCGNullWindowID else {
+            orderOut(nil)
+            return
         }
-    }
 
-    func present(isChatGPTActive: Bool) {
-        setChatGPTActive(isChatGPTActive)
+        level = .normal
+        tooltipPanel.level = .normal
+
         if isChatGPTActive {
+            // ChatGPT is already the active app, so bringing this normal-level
+            // nonactivating panel to the front cannot cover another app.
+            // This also guarantees reappearance after either app is relaunched.
             orderFrontRegardless()
-        } else if !isVisible {
-            // Normal-level ordering keeps the overlay below a newly active app
-            // while still leaving it attached to a visible ChatGPT window.
-            orderFront(nil)
+        } else {
+            // Once another app becomes active, put the overlay immediately above
+            // ChatGPT in WindowServer order. The active app remains above both.
+            order(.above, relativeTo: Int(windowID))
         }
     }
 
@@ -340,8 +350,15 @@ final class OverlayPanel: NSPanel {
         guard isVisible else { return }
         tooltipPanel.update(text: quota.freshness == .unavailable ? "Real quota unavailable" : quota.hoverText)
         positionTooltip()
-        tooltipPanel.level = level
-        tooltipPanel.orderFrontRegardless()
+        tooltipPanel.level = .normal
+
+        // Keep the tooltip immediately above our own panel instead of forcing
+        // it above the active application.
+        if windowNumber > 0 {
+            tooltipPanel.order(.above, relativeTo: windowNumber)
+        } else {
+            tooltipPanel.orderFront(nil)
+        }
     }
 
     private func hideTooltip() {

@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
-BUILD_NUMBER="6"
+BUILD_NUMBER="7"
 
 swift build -c release
 

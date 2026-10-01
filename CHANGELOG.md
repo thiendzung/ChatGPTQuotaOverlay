@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3.3
+
+- Fix the overlay disappearing when focus moves from ChatGPT to another app.
+- Order the overlay immediately above the tracked ChatGPT window rather than dropping its window level on deactivation.
+- Keep active third-party apps naturally above ChatGPT + overlay.
+- Fix failure to reattach after ChatGPT is quit and launched again.
+- Add bounded event-triggered WindowServer settle callbacks after ChatGPT launch/activate/unhide and Space changes.
+- Keep the implementation event-driven; no recurring polling loop.
+
+
 ## 0.1.3.2
 
 - Keep the overlay attached to a visible ChatGPT window when another app becomes active.

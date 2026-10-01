@@ -1,4 +1,4 @@
-# ChatGPT Quota Overlay v0.1.3.2
+# ChatGPT Quota Overlay v0.1.3.3
 
 **built by ThienDzung**
 
@@ -13,9 +13,16 @@ A small local macOS companion for ChatGPT Desktop that shows remaining Codex quo
 - Cached/stale quota is deliberately dimmed and the hover text adds \`cached\`.
 - No usable quota data: \`— / —\`.
 
-## v0.1.3.2
+## v0.1.3.3
 
-This release focuses on window lifecycle, reliability, permissions, and distribution.
+This hotfix focuses on the two lifecycle problems found during real macOS use: losing the overlay when another app becomes active, and failing to reattach after ChatGPT is quit/reopened.
+
+- The overlay is now ordered directly above the tracked ChatGPT window instead of switching between normal/floating levels.
+- Other applications can still sit above ChatGPT and the overlay naturally.
+- ChatGPT launch/activate/unhide events trigger bounded one-shot settle callbacks so the overlay can reattach after the new window reaches WindowServer.
+- No continuous polling loop is introduced.
+
+The v0.1.3.2 reliability, permissions, Start at Login, CI, and release hardening remain in place.
 
 ### Window behavior
 
