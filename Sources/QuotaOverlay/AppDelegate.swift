@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let networkWatcher = NetworkReachabilityWatcher()
     private let launchAtLogin = LaunchAtLoginController()
     private var wakeObserver: NSObjectProtocol?
+    private var presentedWindowID: CGWindowID?
+    private var presentedChatGPTActive: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -84,6 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyWindowState(_ state: ChatGPTWindowState?) {
         guard let state else {
             panel.orderOut(nil)
+            presentedWindowID = nil
+            presentedChatGPTActive = nil
             return
         }
 
@@ -112,10 +116,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         panel.setFrame(quotaFrame, display: true)
-        panel.present(
-            aboveChatGPTWindowID: state.windowID,
-            isChatGPTActive: state.isChatGPTActive
-        )
+
+        // AX move/resize events can arrive rapidly while the user drags the
+        // ChatGPT window. Reordering WindowServer on every frame causes visible
+        // jitter, so z-order is reasserted only when the target/focus/visibility
+        // state actually changes. Frame movement itself remains immediate.
+        let needsPresentation =
+            presentedWindowID != state.windowID
+            || presentedChatGPTActive != state.isChatGPTActive
+            || !panel.isVisible
+
+        if needsPresentation {
+            panel.present(
+                aboveChatGPTWindowID: state.windowID,
+                isChatGPTActive: state.isChatGPTActive
+            )
+            presentedWindowID = state.windowID
+            presentedChatGPTActive = state.isChatGPTActive
+        }
     }
 
     /// CGWindow/AX use Quartz global coordinates (origin at the top-left of the
