@@ -1,5 +1,13 @@
 import AppKit
 
+private enum OverlayMetrics {
+    static let size: CGFloat = 40
+    static let outerRadius: CGFloat = 16.4
+    static let innerRadius: CGFloat = 11.7
+    static let outerLineWidth: CGFloat = 2.5
+    static let innerLineWidth: CGFloat = 2.1
+}
+
 private final class RingQuotaView: NSView {
     var onHover: (() -> Void)?
     var onHoverExit: (() -> Void)?
@@ -10,6 +18,7 @@ private final class RingQuotaView: NSView {
     }
 
     private var trackingAreaRef: NSTrackingArea?
+    private var isHovered = false
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -29,10 +38,14 @@ private final class RingQuotaView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
         onHover?()
     }
 
     override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
         onHoverExit?()
     }
 
@@ -44,35 +57,53 @@ private final class RingQuotaView: NSView {
         super.draw(dirtyRect)
 
         let center = NSPoint(x: bounds.midX, y: bounds.midY)
-        let trackColor = NSColor.separatorColor.withAlphaComponent(0.34)
+
+        if isHovered {
+            let hoverRect = NSRect(
+                x: center.x - 19,
+                y: center.y - 19,
+                width: 38,
+                height: 38
+            )
+            NSColor.labelColor.withAlphaComponent(0.045).setFill()
+            NSBezierPath(ovalIn: hoverRect).fill()
+        }
+
+        // Stale values remain readable but intentionally look cached rather than live.
+        let freshnessAlpha: CGFloat = quota.freshness == .stale ? 0.42 : 1.0
+        let trackColor = NSColor.secondaryLabelColor.withAlphaComponent(0.17 * freshnessAlpha)
 
         drawRing(
             percent: quota.fiveHourPercent,
             center: center,
-            radius: 19.0,
-            lineWidth: 3.4,
+            radius: OverlayMetrics.outerRadius,
+            lineWidth: OverlayMetrics.outerLineWidth,
             trackColor: trackColor,
-            progressColor: .systemBlue
+            progressColor: NSColor.systemBlue.withAlphaComponent(0.96 * freshnessAlpha)
         )
 
         drawRing(
             percent: quota.weekPercent,
             center: center,
-            radius: 14.0,
-            lineWidth: 3.0,
+            radius: OverlayMetrics.innerRadius,
+            lineWidth: OverlayMetrics.innerLineWidth,
             trackColor: trackColor,
-            progressColor: .systemPurple
+            progressColor: NSColor.systemPurple.withAlphaComponent(0.92 * freshnessAlpha)
         )
 
         drawCenterValue(
             quota.fiveHourPercent.map(String.init) ?? "—",
-            color: .systemBlue,
-            y: center.y + 0.2
+            fontSize: 10.2,
+            weight: .bold,
+            y: center.y + 0.15,
+            alpha: quota.freshness == .stale ? 0.52 : 0.96
         )
         drawCenterValue(
             quota.weekPercent.map(String.init) ?? "—",
-            color: .systemPurple,
-            y: center.y - 8.2
+            fontSize: 9.6,
+            weight: .semibold,
+            y: center.y - 9.65,
+            alpha: quota.freshness == .stale ? 0.52 : 0.96
         )
     }
 
@@ -116,17 +147,23 @@ private final class RingQuotaView: NSView {
         progress.stroke()
     }
 
-    private func drawCenterValue(_ text: String, color: NSColor, y: CGFloat) {
+    private func drawCenterValue(
+        _ text: String,
+        fontSize: CGFloat,
+        weight: NSFont.Weight,
+        y: CGFloat,
+        alpha: CGFloat
+    ) {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
 
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 7.8, weight: .semibold),
-            .foregroundColor: color,
+            .font: NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: weight),
+            .foregroundColor: NSColor.labelColor.withAlphaComponent(alpha),
             .paragraphStyle: paragraph
         ]
 
-        let rect = NSRect(x: bounds.midX - 11, y: y, width: 22, height: 9)
+        let rect = NSRect(x: bounds.midX - 12, y: y, width: 24, height: 11)
         (text as NSString).draw(in: rect, withAttributes: attributes)
     }
 }
@@ -145,7 +182,7 @@ private final class QuotaTooltipPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
-        level = .floating
+        level = .normal
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         hidesOnDeactivate = false
         ignoresMouseEvents = true
@@ -153,9 +190,9 @@ private final class QuotaTooltipPanel: NSPanel {
         let container = NSView(frame: contentRect(forFrameRect: frame))
         container.wantsLayer = true
         container.layer?.cornerRadius = 7
-        container.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.96).cgColor
+        container.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.97).cgColor
         container.layer?.borderWidth = 0.5
-        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
+        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.35).cgColor
 
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = NSFont.monospacedDigitSystemFont(ofSize: 11.5, weight: .medium)
@@ -183,14 +220,20 @@ private final class QuotaTooltipPanel: NSPanel {
 private final class MenuActionTarget: NSObject {
     var onRefresh: (() -> Void)?
     var onRequestAccessibility: (() -> Void)?
+    var onToggleLaunchAtLogin: (() -> Void)?
+    var onOpenLoginItemsSettings: (() -> Void)?
     var onQuit: (() -> Void)?
 
     @objc func refresh(_ sender: Any?) { onRefresh?() }
     @objc func requestAccessibility(_ sender: Any?) { onRequestAccessibility?() }
+    @objc func toggleLaunchAtLogin(_ sender: Any?) { onToggleLaunchAtLogin?() }
+    @objc func openLoginItemsSettings(_ sender: Any?) { onOpenLoginItemsSettings?() }
     @objc func quit(_ sender: Any?) { onQuit?() }
 }
 
 final class OverlayPanel: NSPanel {
+    static let preferredSize = NSSize(width: OverlayMetrics.size, height: OverlayMetrics.size)
+
     var onHover: (() -> Void)?
     var onRefresh: (() -> Void)? {
         didSet { menuTarget.onRefresh = onRefresh }
@@ -198,12 +241,21 @@ final class OverlayPanel: NSPanel {
     var onRequestAccessibility: (() -> Void)? {
         didSet { menuTarget.onRequestAccessibility = onRequestAccessibility }
     }
+    var onToggleLaunchAtLogin: (() -> Void)? {
+        didSet { menuTarget.onToggleLaunchAtLogin = onToggleLaunchAtLogin }
+    }
+    var onOpenLoginItemsSettings: (() -> Void)? {
+        didSet { menuTarget.onOpenLoginItemsSettings = onOpenLoginItemsSettings }
+    }
     var onQuit: (() -> Void)? {
         didSet { menuTarget.onQuit = onQuit }
     }
     var accessibilityEnabledProvider: (() -> Bool)?
+    var launchAtLoginStateProvider: (() -> LaunchAtLoginState)?
 
-    private let ringView = RingQuotaView(frame: NSRect(x: 0, y: 0, width: 46, height: 46))
+    private let ringView = RingQuotaView(
+        frame: NSRect(origin: .zero, size: OverlayPanel.preferredSize)
+    )
     private let tooltipPanel = QuotaTooltipPanel()
     private let menuTarget = MenuActionTarget()
     private var quota: Quota = .unavailable
@@ -211,7 +263,7 @@ final class OverlayPanel: NSPanel {
 
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 46, height: 46),
+            contentRect: NSRect(origin: .zero, size: OverlayPanel.preferredSize),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -220,7 +272,7 @@ final class OverlayPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
-        level = .floating
+        level = .normal
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         hidesOnDeactivate = false
         ignoresMouseEvents = false
@@ -245,10 +297,28 @@ final class OverlayPanel: NSPanel {
         }
     }
 
+    func setChatGPTActive(_ active: Bool) {
+        level = active ? .floating : .normal
+        if tooltipPanel.isVisible {
+            tooltipPanel.level = level
+        }
+    }
+
+    func present(isChatGPTActive: Bool) {
+        setChatGPTActive(isChatGPTActive)
+        if isChatGPTActive {
+            orderFrontRegardless()
+        } else if !isVisible {
+            // Normal-level ordering keeps the overlay below a newly active app
+            // while still leaving it attached to a visible ChatGPT window.
+            orderFront(nil)
+        }
+    }
+
     func update(quota: Quota) {
         self.quota = quota
         ringView.quota = quota
-        tooltipPanel.update(text: quota == .unavailable ? "Real quota unavailable" : quota.hoverText)
+        tooltipPanel.update(text: quota.freshness == .unavailable ? "Real quota unavailable" : quota.hoverText)
     }
 
     private func handleMouseEnter() {
@@ -268,8 +338,9 @@ final class OverlayPanel: NSPanel {
 
     private func showTooltip() {
         guard isVisible else { return }
-        tooltipPanel.update(text: quota == .unavailable ? "Real quota unavailable" : quota.hoverText)
+        tooltipPanel.update(text: quota.freshness == .unavailable ? "Real quota unavailable" : quota.hoverText)
         positionTooltip()
+        tooltipPanel.level = level
         tooltipPanel.orderFrontRegardless()
     }
 
@@ -314,6 +385,31 @@ final class OverlayPanel: NSPanel {
         accessibility.target = accessibilityEnabled ? nil : menuTarget
         accessibility.isEnabled = !accessibilityEnabled
         menu.addItem(accessibility)
+
+        let launchState = launchAtLoginStateProvider?() ?? .unavailable
+        switch launchState {
+        case .off, .on:
+            let launch = NSMenuItem(
+                title: "Start at Login",
+                action: #selector(MenuActionTarget.toggleLaunchAtLogin(_:)),
+                keyEquivalent: ""
+            )
+            launch.target = menuTarget
+            launch.state = launchState == .on ? .on : .off
+            menu.addItem(launch)
+        case .requiresApproval:
+            let launch = NSMenuItem(
+                title: "Start at Login: Needs approval…",
+                action: #selector(MenuActionTarget.openLoginItemsSettings(_:)),
+                keyEquivalent: ""
+            )
+            launch.target = menuTarget
+            menu.addItem(launch)
+        case .unavailable:
+            let launch = NSMenuItem(title: "Start at Login: Unavailable", action: nil, keyEquivalent: "")
+            launch.isEnabled = false
+            menu.addItem(launch)
+        }
 
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit ChatGPT Quota Overlay", action: #selector(MenuActionTarget.quit(_:)), keyEquivalent: "")

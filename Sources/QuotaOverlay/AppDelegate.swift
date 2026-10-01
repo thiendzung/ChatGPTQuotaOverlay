@@ -6,19 +6,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let quotaProvider: QuotaProvider = CodexAppServerQuotaProvider()
     private let sessionWatcher = CodexSessionActivityWatcher()
     private let networkWatcher = NetworkReachabilityWatcher()
+    private let launchAtLogin = LaunchAtLoginController()
     private var wakeObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        // v0.1.3 deliberately does not request Accessibility on launch.
-        // Basic positioning works without it; the user may opt in to live
-        // move/resize tracking from the widget's right-click menu.
         panel.accessibilityEnabledProvider = { [weak tracker] in
             tracker?.isAccessibilityEnabled ?? false
         }
         panel.onRequestAccessibility = { [weak tracker] in
             tracker?.requestAccessibilityPermission()
+        }
+        panel.launchAtLoginStateProvider = { [weak launchAtLogin] in
+            launchAtLogin?.state ?? .unavailable
+        }
+        panel.onToggleLaunchAtLogin = { [weak launchAtLogin] in
+            launchAtLogin?.toggle()
+        }
+        panel.onOpenLoginItemsSettings = { [weak launchAtLogin] in
+            launchAtLogin?.openLoginItemsSettings()
         }
         panel.onRefresh = { [weak quotaProvider] in
             quotaProvider?.refreshNow()
@@ -39,8 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.onChatGPTActivated = { [weak self] in
             self?.quotaProvider.refreshIfOlder(than: 300)
         }
-        tracker.onFrameChange = { [weak self] frame in
-            self?.positionPanel(chatGPTFrame: frame)
+        tracker.onStateChange = { [weak self] state in
+            self?.applyWindowState(state)
         }
         tracker.start()
 
@@ -74,34 +81,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quotaProvider.stop()
     }
 
-    private func positionPanel(chatGPTFrame frame: CGRect?) {
-        guard let frame else {
+    private func applyWindowState(_ state: ChatGPTWindowState?) {
+        guard let state else {
             panel.orderOut(nil)
             return
         }
 
-        guard let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) ?? NSScreen.main else {
+        let appKitFrame = appKitFrame(fromQuartzFrame: state.frame)
+        guard let screen = screen(containing: appKitFrame) else {
             panel.orderOut(nil)
             return
         }
 
-        // ChatGPT's compact left rail is ~106 px wide. The widget is centered
-        // at ~53 px from the window's left edge, matching the native icon rail.
-        let size: CGFloat = 46
-        let railCenterX = frame.minX + 53
+        let size = OverlayPanel.preferredSize.width
+        let railCenterX = appKitFrame.minX + 27
         var x = railCenterX - size / 2
+        var y = appKitFrame.minY + 57
 
-        // AX/CG window bounds use a top-origin coordinate system. Convert the
-        // ChatGPT window's bottom edge to AppKit coordinates, then keep the
-        // widget ~79 px above it so it sits cleanly above the profile avatar.
-        let chatGPTBottomY = screen.frame.maxY - frame.maxY
-        var y = chatGPTBottomY + 79
-
-        let visible = screen.visibleFrame
-        x = min(max(x, visible.minX + 4), visible.maxX - size - 4)
-        y = min(max(y, visible.minY + 4), visible.maxY - size - 4)
+        // Clamp only to the physical screen, not visibleFrame. In ChatGPT full
+        // screen the Dock/menu-bar insets should not push the overlay inward.
+        let bounds = screen.frame
+        x = min(max(x, bounds.minX + 4), bounds.maxX - size - 4)
+        y = min(max(y, bounds.minY + 4), bounds.maxY - size - 4)
 
         panel.setFrame(NSRect(x: x, y: y, width: size, height: size), display: true)
-        panel.orderFrontRegardless()
+        panel.present(isChatGPTActive: state.isChatGPTActive)
+    }
+
+    /// CGWindow/AX use Quartz global coordinates (origin at the top-left of the
+    /// primary display). AppKit uses a bottom-left origin. Using the primary
+    /// display height as the global flip axis also handles displays arranged
+    /// above, below, or beside the primary display.
+    private func appKitFrame(fromQuartzFrame frame: CGRect) -> CGRect {
+        guard let primary = NSScreen.screens.first else { return frame }
+        return CGRect(
+            x: frame.minX,
+            y: primary.frame.maxY - frame.maxY,
+            width: frame.width,
+            height: frame.height
+        )
+    }
+
+    private func screen(containing frame: CGRect) -> NSScreen? {
+        let candidate = NSScreen.screens
+            .map { ($0, intersectionArea($0.frame, frame)) }
+            .max { $0.1 < $1.1 }
+        guard let candidate, candidate.1 > 0 else { return nil }
+        return candidate.0
+    }
+
+    private func intersectionArea(_ lhs: CGRect, _ rhs: CGRect) -> CGFloat {
+        let intersection = lhs.intersection(rhs)
+        guard !intersection.isNull else { return 0 }
+        return intersection.width * intersection.height
     }
 }

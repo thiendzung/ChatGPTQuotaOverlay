@@ -1,4 +1,4 @@
-# ChatGPT Quota Overlay v0.1.3
+# ChatGPT Quota Overlay v0.1.3.2
 
 **built by ThienDzung**
 
@@ -8,116 +8,157 @@ A small local macOS companion for ChatGPT Desktop that shows remaining Codex quo
 
 - Outer blue ring: remaining 5-hour quota.
 - Inner purple ring: remaining weekly quota.
-- Center: the two remaining percentages, for example `62 / 55`.
-- Hover: `5h 62% · Week 55%`.
-- Right-click: manual refresh, optional live-window-tracking permission, or quit.
+- Center: remaining percentages, for example \`61 / 55\`.
+- Hover: \`5h 61% · Week 55%\`.
+- Cached/stale quota is deliberately dimmed and the hover text adds \`cached\`.
+- No usable quota data: \`— / —\`.
 
-## What changed in v0.1.3
+## v0.1.3.2
 
-v0.1.3 is primarily a security, permission, and reliability release.
+This release focuses on window lifecycle, reliability, permissions, and distribution.
 
-- Accessibility is **no longer requested automatically at launch**.
-- Without Accessibility permission, the overlay still positions itself when ChatGPT becomes active.
-- Accessibility is only needed for live move/resize tracking and is explicitly opt-in.
-- The overlay resolves Codex only from a recognized `ChatGPT.app`/`Codex.app`; it no longer falls back to arbitrary binaries in PATH.
-- The Codex child process receives an allow-listed environment instead of every environment variable from the overlay.
-- App Server requests are allow-listed to `initialize` and `account/rateLimits/read`.
-- App Server buffers, pending requests, and request timeouts are bounded.
-- Sparse `account/rateLimits/updated` notifications are merged correctly instead of accidentally dropping the other quota window.
-- The session watcher is read-only and no longer creates `~/.codex/sessions`.
-- The installer no longer removes Gatekeeper quarantine attributes automatically.
-- AXObserver run-loop sources are removed cleanly when tracking stops.
-- Added parser tests and a documented threat model in `SECURITY.md`.
+### Window behavior
+
+- Switching to another app no longer hides the widget just because ChatGPT lost focus.
+- When ChatGPT is active, the overlay uses a floating level so it stays above ChatGPT.
+- When another app becomes active, the overlay drops to normal level so that app can cover it naturally.
+- Minimized, hidden, closed, off-Space, or terminated ChatGPT windows are hidden when their state can be observed.
+- Active Space changes are handled as events; no window polling loop is used.
+- Multi-monitor coordinates are converted using the primary display as the Quartz/AppKit flip axis.
+- Multiple ChatGPT windows are supported: the active/topmost ChatGPT window is preferred, while the last tracked visible window is retained when another app becomes active.
+- Full-screen ChatGPT remains supported through the auxiliary full-screen panel behavior.
+
+Without Accessibility permission, window state is refreshed on macOS app/Space/screen lifecycle events. Enabling live window tracking adds exact move, resize, focus, minimize, restore, and window-destroy events.
+
+### Quota freshness
+
+The app distinguishes three states:
+
+- **fresh**: normal rings and digits;
+- **stale/cached**: values remain visible but are dimmed;
+- **unavailable**: \`— / —\`.
+
+A successful quota sample becomes stale after 15 minutes if no newer App Server result arrives. App Server failure marks existing values stale immediately. This uses a one-shot deadline, not recurring polling.
+
+### Self-recovery
+
+If the bundled Codex App Server exits, times out, or returns an invalid protocol response:
+
+1. cached data is marked stale;
+2. the broken child process is cleaned up;
+3. no retry loop is started;
+4. the next real event (hover, ChatGPT activation, Codex activity, network recovery, or Mac wake) resolves the OpenAI-signed Codex binary again and starts a fresh App Server.
+
+### Start at Login
+
+Right-click the rings and select \`Start at Login\`.
+
+This uses Apple's \`SMAppService.mainApp\` API on macOS 13+. If macOS requires approval, the menu opens **System Settings > Login Items** using the official ServiceManagement API. No LaunchAgent plist is installed manually.
+
+### CI and releases
+
+GitHub Actions now verifies on macOS:
+
+- shell syntax;
+- \`swift build -c release\`;
+- \`swift test\`;
+- app packaging;
+- plist validity;
+- ad-hoc code-signature integrity.
+
+Tags matching \`v*\` run a release workflow that builds the app, creates a macOS ZIP, writes a SHA-256 file, and publishes a GitHub Release.
+
+There is intentionally **no in-app auto-updater** in v0.1.3.2.
 
 ## Real quota source
 
-The app launches the Codex binary bundled inside ChatGPT and uses the local Codex App Server:
+The app launches the Codex binary bundled inside an OpenAI-signed ChatGPT/Codex app and uses the local Codex App Server:
 
-- `account/rateLimits/read`
-- `account/rateLimits/updated`
+- \`account/rateLimits/read\`
+- \`account/rateLimits/updated\`
 
-The overlay itself does **not** read browser cookies, `~/.codex/auth.json`, API keys, or Keychain credentials. Authentication is handled by the OpenAI Codex binary.
-
-The App Server response can contain additional account metadata. v0.1.3 keeps the response only in memory long enough to extract the Codex rate-limit snapshot; it does not log or persist the response.
+The overlay does **not** read browser cookies, \`~/.codex/auth.json\`, API keys, or Keychain credentials. Full App Server responses are not logged or persisted.
 
 ## Permissions
 
-### Default mode: no special macOS permission
+### Default mode
 
-The overlay can identify the frontmost ChatGPT window and read its window bounds when ChatGPT becomes active. It does not capture pixels or inspect conversation content.
+No special privacy permission is requested at startup.
 
-### Optional Accessibility permission
+The app uses public window metadata to position itself when macOS reports relevant lifecycle events. It does not capture screen pixels or inspect conversation text.
 
-Accessibility is only used for event-driven window move/resize notifications, so the overlay follows ChatGPT immediately while the window is moved or resized.
+### Optional Accessibility
 
-To enable it:
+Right-click the quota rings and choose \`Enable live window tracking…\`.
 
-1. Right-click the quota rings.
-2. Choose `Enable live window tracking…`.
-3. Approve `ChatGPT Quota Overlay` in macOS Privacy & Security > Accessibility.
+Accessibility is used only to observe the selected ChatGPT window's:
 
-Accessibility is a broad macOS permission. This app only uses it for the focused ChatGPT window's position and size.
+- move / resize;
+- focus changes;
+- minimize / restore;
+- destruction.
+
+The app does not read UI text, keystrokes, messages, or controls.
 
 Not required:
 
-- Screen Recording
-- Full Disk Access
-- Automation / Apple Events
-- microphone or camera
-- direct Keychain access
+- Screen Recording;
+- Full Disk Access;
+- Apple Events automation;
+- microphone or camera;
+- direct Keychain access.
 
 ## Refresh policy
 
 No continuous polling loop.
 
-- startup: read once
-- App Server quota event: update immediately
-- Codex session activity: one refresh after a 2-second debounce
-- ChatGPT becomes active: refresh if data is older than 5 minutes
-- hover: refresh if data is older than 60 seconds
-- Mac wake/network recovery: refresh if data is older than 5 minutes
-- minimum spacing between reads: 10 seconds
+- startup: one read;
+- App Server quota event: immediate update;
+- Codex session activity: one refresh after a 2-second debounce;
+- ChatGPT activation: refresh if older than 5 minutes;
+- hover: refresh if older than 60 seconds;
+- Mac wake / network recovery: refresh if older than 5 minutes;
+- minimum spacing between App Server reads: 10 seconds;
+- freshness transition: one-shot at 15 minutes.
 
-## Install / upgrade on macOS
+## Install / upgrade
 
-```bash
+\`\`\`bash
 chmod +x install.sh
 ./install.sh
-```
+\`\`\`
 
-The app is installed to:
+Installed to:
 
-```text
+\`\`\`text
 ~/Applications/ChatGPT Quota Overlay.app
-```
+\`\`\`
 
-The installer does not use `sudo`, does not modify `ChatGPT.app`, and does not disable Gatekeeper.
+The installer does not use \`sudo\`, does not modify \`ChatGPT.app\`, and does not remove Gatekeeper quarantine attributes.
 
-## Manual build
+## Build and test
 
-```bash
-./build-app.sh
-open "dist/ChatGPT Quota Overlay.app"
-```
-
-## Tests
-
-On macOS:
-
-```bash
+\`\`\`bash
 swift test
-```
+./build-app.sh
+\`\`\`
 
-For a syntax-only check:
+Syntax-only check:
 
-```bash
-swiftc -parse Sources/QuotaOverlay/*.swift Tests/QuotaOverlayTests/*.swift
-```
+\`\`\`bash
+swiftc -frontend -parse Sources/QuotaOverlay/*.swift Tests/QuotaOverlayTests/*.swift
+\`\`\`
 
-## Compatibility target
+Create a release package locally:
+
+\`\`\`bash
+./scripts/package-release.sh
+\`\`\`
+
+## Compatibility
 
 - macOS 13+
-- ChatGPT/Codex desktop bundle IDs: `com.openai.chat` or `com.openai.codex`
-- validated quota protocol shape: Codex App Server `account/rateLimits/read`
+- ChatGPT/Codex bundle IDs \`com.openai.chat\` or \`com.openai.codex\`
+- Codex App Server \`account/rateLimits/read\`
 
 This is a local companion app, not an official OpenAI extension.

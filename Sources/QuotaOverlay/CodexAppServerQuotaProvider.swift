@@ -26,7 +26,10 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
     private var lastRefreshAt: Date?
     private var lastRequestAt: Date?
     private var activityWorkItem: DispatchWorkItem?
+    private var staleWorkItem: DispatchWorkItem?
     private var rateLimitRequestInFlight = false
+    private var isStopping = false
+    private var suppressNextTerminationStale = false
     private var lastCodexSnapshot: [String: Any]?
     private var lastQuota: Quota?
 
@@ -34,12 +37,14 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
     private let requestTimeout: TimeInterval = 8
     private let maximumBufferBytes = 1_048_576
     private let maximumPendingRequests = 4
+    private let staleAfter: TimeInterval = 15 * 60
 
     init() {
         queue.setSpecific(key: queueKey, value: ())
     }
 
     func start() {
+        isStopping = false
         DispatchQueue.main.async { [weak self] in self?.onChange?(.unavailable) }
         queue.async { [weak self] in
             self?.ensureServerAndRefresh()
@@ -48,8 +53,11 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
 
     func stop() {
         let cleanup = { [self] in
+            isStopping = true
             activityWorkItem?.cancel()
             activityWorkItem = nil
+            staleWorkItem?.cancel()
+            staleWorkItem = nil
             cancelPendingRequests()
             initialized = false
             refreshAfterInitialize = false
@@ -85,6 +93,14 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
     func refreshIfOlder(than age: TimeInterval) {
         queue.async { [weak self] in
             guard let self else { return }
+
+            // A dead/uninitialized source is retried on the next real event even
+            // if cached quota values are still younger than the requested age.
+            if self.process == nil || self.process?.isRunning != true || !self.initialized {
+                self.ensureServerAndRefresh(ignoreAge: true)
+                return
+            }
+
             if let lastRefreshAt, Date().timeIntervalSince(lastRefreshAt) < age {
                 return
             }
@@ -128,9 +144,14 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
 
     private func startServer() {
         guard let executable = CodexBinaryResolver.resolve() else {
-            emitUnavailableIfNeeded()
+            markSourceUnavailable()
             return
         }
+
+        isStopping = false
+        suppressNextTerminationStale = false
+        lastRequestAt = nil
+        readBuffer.removeAll(keepingCapacity: false)
 
         let child = Process()
         let input = Pipe()
@@ -168,6 +189,11 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
                 self.initialized = false
                 self.rateLimitRequestInFlight = false
                 self.cancelPendingRequests()
+                if self.suppressNextTerminationStale {
+                    self.suppressNextTerminationStale = false
+                } else if !self.isStopping {
+                    self.markSourceUnavailable()
+                }
             }
         }
 
@@ -181,12 +207,12 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
         } catch {
             output.fileHandleForReading.readabilityHandler = nil
             stderrPipe.fileHandleForReading.readabilityHandler = nil
-            emitUnavailableIfNeeded()
+            markSourceUnavailable()
         }
     }
 
     private func sendInitialize() {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.3"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.3.2"
         sendRequest(
             method: "initialize",
             params: [
@@ -203,7 +229,7 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
         ) { [weak self] response in
             guard let self else { return }
             guard response["error"] == nil else {
-                self.emitUnavailableIfNeeded()
+                self.handleServerFailure()
                 return
             }
 
@@ -231,16 +257,15 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
             guard let self else { return }
             self.rateLimitRequestInFlight = false
 
-            guard let result = response["result"] as? [String: Any],
+            guard response["error"] == nil,
+                  let result = response["result"] as? [String: Any],
                   let snapshot = QuotaParser.codexSnapshot(fromRateLimitsResponse: result),
                   let quota = QuotaParser.quota(fromSnapshot: snapshot) else {
+                self.handleServerFailure()
                 return
             }
 
-            self.lastCodexSnapshot = snapshot
-            self.lastRefreshAt = Date()
-            self.lastQuota = quota
-            self.emit(quota)
+            self.acceptFreshQuota(quota, snapshot: snapshot)
         }
     }
 
@@ -287,10 +312,7 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
         let merged = QuotaParser.mergeSnapshot(base: lastCodexSnapshot, update: update)
         guard let quota = QuotaParser.quota(fromSnapshot: merged) else { return }
 
-        lastCodexSnapshot = merged
-        lastRefreshAt = Date()
-        lastQuota = quota
-        emit(quota)
+        acceptFreshQuota(quota, snapshot: merged)
     }
 
     private func sendRequest(
@@ -331,18 +353,30 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
         do {
             try handle.write(contentsOf: data)
         } catch {
-            initialized = false
+            handleServerFailure()
         }
     }
 
     private func handleProtocolFailure() {
         readBuffer.removeAll(keepingCapacity: false)
+        handleServerFailure()
+    }
+
+    /// Marks cached data stale and tears down the current App Server. Recovery is
+    /// intentionally event-driven: the next hover/activation/session/network/wake
+    /// event resolves the bundled Codex binary again and starts a fresh server.
+    private func handleServerFailure() {
         initialized = false
         rateLimitRequestInFlight = false
         cancelPendingRequests()
         outputPipe?.fileHandleForReading.readabilityHandler = nil
         errorPipe?.fileHandleForReading.readabilityHandler = nil
-        process?.terminate()
+        try? inputPipe?.fileHandleForWriting.close()
+        if process?.isRunning == true {
+            suppressNextTerminationStale = true
+            process?.terminate()
+        }
+        markSourceUnavailable()
     }
 
     private func cancelPendingRequests() {
@@ -355,9 +389,47 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
         DispatchQueue.main.async { [weak self] in self?.onChange?(quota) }
     }
 
-    private func emitUnavailableIfNeeded() {
-        guard lastQuota == nil else { return }
-        emit(.unavailable)
+    private func acceptFreshQuota(_ quota: Quota, snapshot: [String: Any]) {
+        let fresh = Quota(
+            fiveHourPercent: quota.fiveHourPercent,
+            weekPercent: quota.weekPercent,
+            freshness: .fresh
+        )
+        lastCodexSnapshot = snapshot
+        lastRefreshAt = Date()
+        lastQuota = fresh
+        scheduleStaleTransition(from: lastRefreshAt!)
+        emit(fresh)
+    }
+
+    private func markSourceUnavailable() {
+        staleWorkItem?.cancel()
+        staleWorkItem = nil
+
+        if let lastQuota, lastQuota.hasValues {
+            let stale = lastQuota.markedStale()
+            self.lastQuota = stale
+            emit(stale)
+        } else {
+            emit(.unavailable)
+        }
+    }
+
+    private func scheduleStaleTransition(from refreshDate: Date) {
+        staleWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self,
+                  self.lastRefreshAt == refreshDate,
+                  let lastQuota = self.lastQuota,
+                  lastQuota.hasValues else {
+                return
+            }
+            let stale = lastQuota.markedStale()
+            self.lastQuota = stale
+            self.emit(stale)
+        }
+        staleWorkItem = item
+        queue.asyncAfter(deadline: .now() + staleAfter, execute: item)
     }
 
     private func safeChildEnvironment() -> [String: String] {
