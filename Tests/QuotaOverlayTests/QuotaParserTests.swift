@@ -56,4 +56,28 @@ final class QuotaParserTests: XCTestCase {
         XCTAssertEqual(quota.fiveHourPercent, 0)
         XCTAssertEqual(quota.weekPercent, 100)
     }
+
+    func testParsedQuotaStartsFreshAndCanBecomeStale() throws {
+        let snapshot: [String: Any] = [
+            "primary": ["usedPercent": 38, "windowDurationMins": 300],
+            "secondary": ["usedPercent": 45, "windowDurationMins": 10080]
+        ]
+
+        let quota = try XCTUnwrap(QuotaParser.quota(fromSnapshot: snapshot))
+        XCTAssertEqual(quota.freshness, .fresh)
+        XCTAssertEqual(quota.fiveHourPercent, 62)
+        XCTAssertEqual(quota.weekPercent, 55)
+
+        let stale = quota.markedStale()
+        XCTAssertEqual(stale.freshness, .stale)
+        XCTAssertEqual(stale.fiveHourPercent, 62)
+        XCTAssertEqual(stale.weekPercent, 55)
+        XCTAssertTrue(stale.hoverText.contains("cached"))
+    }
+
+    func testUnavailableQuotaCannotPretendToBeStale() {
+        XCTAssertEqual(Quota.unavailable.markedStale(), .unavailable)
+        XCTAssertEqual(Quota.unavailable.freshness, .unavailable)
+    }
+
 }

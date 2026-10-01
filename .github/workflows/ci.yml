@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Shell syntax
+        run: bash -n build-app.sh install.sh scripts/package-release.sh
+      - name: Build
+        run: swift build -c release
+      - name: Test
+        run: swift test
+      - name: Package app
+        run: ./build-app.sh
+      - name: Validate plist and signature
+        run: |
+          plutil -lint "dist/ChatGPT Quota Overlay.app/Contents/Info.plist"
+          codesign --verify --deep --strict "dist/ChatGPT Quota Overlay.app"

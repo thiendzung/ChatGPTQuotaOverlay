@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify, test, and package
+        run: |
+          bash -n build-app.sh install.sh scripts/package-release.sh
+          swift test
+          ./scripts/package-release.sh
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          gh release create "v$VERSION" \
+            "dist/ChatGPT-Quota-Overlay-v$VERSION-macOS.zip" \
+            "dist/ChatGPT-Quota-Overlay-v$VERSION-macOS.zip.sha256" \
+            --title "ChatGPT Quota Overlay v$VERSION" \
+            --generate-notes
