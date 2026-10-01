@@ -23,6 +23,8 @@ ChatGPT Quota Overlay is intentionally narrow: read two Codex quota windows and 
 4. **macOS Accessibility**
    - Optional and not requested on startup.
    - Used only for ChatGPT window move, resize, focus, minimize/restore, destruction, and frame metadata.
+   - AXObserver callbacks are the primary realtime tracking path while ChatGPT is dragged or resized.
+   - The app does not traverse the ChatGPT accessibility tree to locate the avatar/profile element.
    - No UI text, keystrokes, conversation content, or controls are read or manipulated.
 
 5. **Window metadata without Accessibility**
