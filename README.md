@@ -107,7 +107,7 @@ Accessibility is used only to observe the selected ChatGPT window's:
 - minimize / restore;
 - destruction.
 
-The app does not read UI text, keystrokes, messages, or controls.
+The app does not read UI text, the account avatar element, keystrokes, messages, or controls. It reads only top-level window position/size metadata needed to keep the quota panel attached to the avatar zone.
 
 Not required:
 
