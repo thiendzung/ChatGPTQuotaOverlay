@@ -301,7 +301,10 @@ final class OverlayPanel: NSPanel {
     /// WindowServer z-order instead of changing levels when app focus changes.
     /// This prevents the panel from sinking behind ChatGPT on deactivation,
     /// while a newly active application can still remain above both windows.
-    func present(aboveChatGPTWindowID windowID: CGWindowID) {
+    func present(
+        aboveChatGPTWindowID windowID: CGWindowID,
+        isChatGPTActive: Bool
+    ) {
         guard windowID != kCGNullWindowID else {
             orderOut(nil)
             return
@@ -309,7 +312,17 @@ final class OverlayPanel: NSPanel {
 
         level = .normal
         tooltipPanel.level = .normal
-        order(.above, relativeTo: Int(windowID))
+
+        if isChatGPTActive {
+            // ChatGPT is already the active app, so bringing this normal-level
+            // nonactivating panel to the front cannot cover another app.
+            // This also guarantees reappearance after either app is relaunched.
+            orderFrontRegardless()
+        } else {
+            // Once another app becomes active, put the overlay immediately above
+            // ChatGPT in WindowServer order. The active app remains above both.
+            order(.above, relativeTo: Int(windowID))
+        }
     }
 
     func update(quota: Quota) {
