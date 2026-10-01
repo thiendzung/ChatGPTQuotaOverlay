@@ -17,6 +17,19 @@ final class SidebarAnchorGeometryTests: XCTestCase {
         XCTAssertEqual(frame.height, 40, accuracy: 0.001)
     }
 
+    func testResizeKeepsAvatarZoneAnchorStable() {
+        let compact = SidebarAnchorGeometry.quotaFrame(
+            chatGPTFrame: CGRect(x: 50, y: 80, width: 800, height: 600),
+            quotaSize: 40
+        )
+        let resized = SidebarAnchorGeometry.quotaFrame(
+            chatGPTFrame: CGRect(x: 50, y: 80, width: 1300, height: 950),
+            quotaSize: 40
+        )
+
+        XCTAssertEqual(compact, resized)
+    }
+
     func testMovingChatGPTMovesQuotaByExactlySameDelta() {
         let first = SidebarAnchorGeometry.quotaFrame(
             chatGPTFrame: CGRect(x: 50, y: 80, width: 900, height: 700),
