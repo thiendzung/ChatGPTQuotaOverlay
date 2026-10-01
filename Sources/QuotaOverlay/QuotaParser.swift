@@ -3,7 +3,7 @@ import Foundation
 enum QuotaParser {
     static func codexSnapshot(fromRateLimitsResponse result: [String: Any]) -> [String: Any]? {
         if let byID = result["rateLimitsByLimitId"] as? [String: Any],
-            let codex = byId["codex"] as? [String: Any] {
+           let codex = byID["codex"] as? [String: Any] {
             return codex
         }
         return result["rateLimits"] as? [String: Any]

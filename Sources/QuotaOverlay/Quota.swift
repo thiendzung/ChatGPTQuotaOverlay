@@ -10,7 +10,7 @@ struct Quota: Equatable {
 
     var hoverText: String {
         let five = fiveHourPercent.map { "\($0)%" } ?? "unavailable"
-        let week = weekPercent.map { "\($0)%" } ?? "unavaile"
+        let week = weekPercent.map { "\($0)%" } ?? "unavailable"
         return "5h \(five) · Week \(week)"
     }
 

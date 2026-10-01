@@ -122,126 +122,204 @@ private final class RingQuotaView: NSView {
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 7.8, weight: .semibold),
-            .foregroundColor: color,Bˆœ\˜YÜ˜\İ[Nˆ\˜YÜ˜\ˆB‚ˆ]™XİH”Ô™Xİ
-ˆ›İ[™Ë›ZYHLKNˆKÚYˆŒ‹ZYÚˆJBˆ
-^\È”Ôİš[™ÊK™˜]Ê[ˆ™XİÚ]]šX]\Îˆ]šX]\ÊBˆBŸB‚œš]˜]Hš[˜[Û\ÜÈ][İUÛÛ\[™[ˆ”Ô[™[Âˆš]˜]H]X™[H”Õ^šY[
-X™[Ú]İš[™ÎˆZ8 %0­ÈÙYZÈ8 %ŠB‚ˆ[š]
+            .foregroundColor: color,
+            .paragraphStyle: paragraph
+        ]
 
-HÂˆİ\\‹š[š]
-ˆÛÛ[™Xİˆ”Ô™Xİ
-ˆNˆÚYˆM‹ZYÚˆ
-Kˆİ[SX\ÚÎˆË˜›Ü™\›\ÜË››Û˜Xİ]˜][™Ô[™[Kˆ˜XÚÚ[™Îˆ˜Y™™\™YˆY™\ˆ˜[ÙBˆ
-B‚ˆ\ÓÜ\]YHH˜[ÙBˆ˜XÚÙÜ›İ[™ÛÛÜˆH˜ÛX\‚ˆ\ÔÚYİÈHYBˆ]™[H™›Ø][™ÂˆÛÛXİ[Û™Z]š[ÜˆHË˜Ø[’›Ú[[ÜXÙ\Ë™[ØÜ™Y[]^[X\KšYÛ›Ü™\ĞŞXÛWBˆY\ÓÛ‘XXİ]˜]HH˜[ÙBˆYÛ›Ü™\Ó[İ\ÙQ]™[ÈHYB‚ˆ]ÛÛZ[™\ˆH”ÕšY]Êœ˜[YNˆÛÛ[™Xİ
-›Ü‘œ˜[YT™Xİˆœ˜[YJJBˆÛÛZ[™\‹Ø[Ó^Y\ˆHYBˆÛÛZ[™\‹›^Y\Ë˜ÛÜ›™\”˜Y]\ÈHÂˆÛÛZ[™\‹›^Y\Ë˜˜XÚÙÜ›İ[™ÛÛÜˆH”ĞÛÛÜ‹Ú[™İĞ˜XÚÙÜ›İ[™ÛÛÜ‹Ú][PÛÛ\Û™[
-MŠK˜ÙĞÛÛÜ‚ˆÛÛZ[™\‹›^Y\Ë˜›Ü™\•ÚYHBˆÛÛZ[™\‹›^Y\Ë˜›Ü™\ÛÛÜˆH”ĞÛÛÜ‹œÙ\\˜]ÜÛÛÜ‹Ú][PÛÛ\Û™[
-JK˜ÙĞÛÛÜ‚‚ˆX™[˜[œÛ]\Ğ]]Ü™\Ú^š[™ÓX\ÚÒ[ĞÛÛœİ˜Z[ÈH˜[ÙBˆX™[™›ÛH”Ñ›Û›[Û›ÜÜXÙYYÚ]Ş\İ[Q›Û
-Ù”Ú^™NˆLKKÙZYÚˆ›YY][JBˆX™[^ÛÛÜˆH›X™[ÛÛÜ‚ˆX™[˜[YÛ›Y[H˜Ù[\‚ˆX™[›[™Pœ™XZÓ[ÙHH˜PÛ\[™Â‚ˆÛÛZ[™\‹˜YİXšY]ÊX™[
-BˆÛÛ[šY]ÈHÛÛZ[™\‚‚ˆ”Ó^[İ]ÛÛœİ˜Z[˜Xİ]˜]JÂˆX™[›XY[™Ğ[˜ÚÜ‹˜ÛÛœİ˜Z[
-\]X[ÎˆÛÛZ[™\‹›XY[™Ğ[˜ÚÜ‹ÛÛœİ[ˆJKˆX™[˜Z[[™Ğ[˜ÚÜ‹˜ÛÛœİ˜Z[
-\]X[ÎˆÛÛZ[™\‹˜Z[[™Ğ[˜ÚÜ‹ÛÛœİ[ˆNJKˆX™[˜Ù[\–P[˜ÚÜ‹˜ÛÛœİ˜Z[
-\]X[ÎˆÛÛZ[™\‹˜Ù[\–P[˜ÚÜŠBˆJBˆB‚ˆ[˜È\]J^ˆİš[™ÊHÂˆX™[œİš[™Õ˜[YHH^ˆ]ÚYHX^
-M‹X™[š[š[œÚXĞÛÛ[Ú^™KÚY
-ÈŒ
-BˆÙ]ÛÛ[Ú^™J”ÔÚ^™JÚYˆÚYZYÚˆ
-JBˆBŸB‚œš]˜]Hš[˜[Û\ÜÈY[PXİ[Û•\™Ù]ˆ”ÓØš™XİÂˆ˜\ˆÛ”™Yœ™\Úˆ
+        let rect = NSRect(x: bounds.midX - 11, y: y, width: 22, height: 9)
+        (text as NSString).draw(in: rect, withAttributes: attributes)
+    }
+}
 
+private final class QuotaTooltipPanel: NSPanel {
+    private let label = NSTextField(labelWithString: "5h â€” Â· Week â€”")
 
-HOˆ›ÚY
-OÂˆ˜\ˆÛ”™\]Y\İXØÙ\ÜÚXš[]Nˆ
+    init() {
+        super.init(
+            contentRect: NSRect(x: 0, y: 0, width: 142, height: 28),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
 
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = true
+        level = .floating
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        hidesOnDeactivate = false
+        ignoresMouseEvents = true
 
-HOˆ›ÚY
-OÂˆ˜\ˆÛ”]Z]ˆ
+        let container = NSView(frame: contentRect(forFrameRect: frame))
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 7
+        container.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.96).cgColor
+        container.layer?.borderWidth = 0.5
+        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
 
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = NSFont.monospacedDigitSystemFont(ofSize: 11.5, weight: .medium)
+        label.textColor = .labelColor
+        label.alignment = .center
+        label.lineBreakMode = .byClipping
 
-HOˆ›ÚY
-OÂ‚ˆØš˜È[˜È™Yœ™\Ú
-ÈÙ[™\ˆ[OÊHÈÛ”™Yœ™\ÚÊ
-HBˆØš˜È[˜È™\]Y\İXØÙ\ÜÚXš[]JÈÙ[™\ˆ[OÊHÈÛ”™\]Y\İXØÙ\ÜÚXš[]OÊ
-HBˆØš˜È[˜È]Z]
-ÈÙ[™\ˆ[OÊHÈÛ”]Z]Ê
-HBŸB‚™š[˜[Û\ÜÈİ™\›^T[™[ˆ”Ô[™[Âˆ˜\ˆÛ’İ™\ˆ
+        container.addSubview(label)
+        contentView = container
 
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 9),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -9),
+            label.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+    }
 
-HOˆ›ÚY
-OÂˆ˜\ˆÛ”™Yœ™\Úˆ
+    func update(text: String) {
+        label.stringValue = text
+        let width = max(142, label.intrinsicContentSize.width + 20)
+        setContentSize(NSSize(width: width, height: 28))
+    }
+}
 
+private final class MenuActionTarget: NSObject {
+    var onRefresh: (() -> Void)?
+    var onRequestAccessibility: (() -> Void)?
+    var onQuit: (() -> Void)?
 
-HOˆ›ÚY
-OÈÂˆYÙ]ÈY[U\™Ù]›Û”™Yœ™\ÚHÛ”™Yœ™\ÚBˆBˆ˜\ˆÛ”™\]Y\İXØÙ\ÜÚXš[]Nˆ
+    @objc func refresh(_ sender: Any?) { onRefresh?() }
+    @objc func requestAccessibility(_ sender: Any?) { onRequestAccessibility?() }
+    @objc func quit(_ sender: Any?) { onQuit?() }
+}
 
+final class OverlayPanel: NSPanel {
+    var onHover: (() -> Void)?
+    var onRefresh: (() -> Void)? {
+        didSet { menuTarget.onRefresh = onRefresh }
+    }
+    var onRequestAccessibility: (() -> Void)? {
+        didSet { menuTarget.onRequestAccessibility = onRequestAccessibility }
+    }
+    var onQuit: (() -> Void)? {
+        didSet { menuTarget.onQuit = onQuit }
+    }
+    var accessibilityEnabledProvider: (() -> Bool)?
 
-HOˆ›ÚY
-OÈÂˆYÙ]ÈY[U\™Ù]›Û”™\]Y\İXØÙ\ÜÚXš[]HHÛ”™\]Y\İXØÙ\ÜÚXš[]HBˆBˆ˜\ˆÛ”]Z]ˆ
+    private let ringView = RingQuotaView(frame: NSRect(x: 0, y: 0, width: 46, height: 46))
+    private let tooltipPanel = QuotaTooltipPanel()
+    private let menuTarget = MenuActionTarget()
+    private var quota: Quota = .unavailable
+    private var hoverWorkItem: DispatchWorkItem?
 
+    init() {
+        super.init(
+            contentRect: NSRect(x: 0, y: 0, width: 46, height: 46),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
 
-HOˆ›ÚY
-OÈÂˆYÙ]ÈY[U\™Ù]›Û”]Z]HÛ”]Z]BˆBˆ˜\ˆXØÙ\ÜÚXš[]Q[˜X›Y›İšY\ˆ
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        level = .floating
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        hidesOnDeactivate = false
+        ignoresMouseEvents = false
 
+        ringView.autoresizingMask = [.width, .height]
+        ringView.frame = contentRect(forFrameRect: frame)
+        ringView.onHover = { [weak self] in self?.handleMouseEnter() }
+        ringView.onHoverExit = { [weak self] in self?.handleMouseExit() }
+        ringView.contextMenuProvider = { [weak self] in self?.makeContextMenu() }
+        contentView = ringView
+    }
 
-HOˆ›ÛÛ
-OÂ‚ˆš]˜]H]š[™ÕšY]ÈHš[™Ô][İUšY]Êœ˜[YNˆ”Ô™Xİ
-ˆNˆÚYˆ‹ZYÚˆŠJBˆš]˜]H]ÛÛ\[™[H][İUÛÛ\[™[
+    override func orderOut(_ sender: Any?) {
+        hideTooltip()
+        super.orderOut(sender)
+    }
 
-Bˆš]˜]H]Y[U\™Ù]HY[PXİ[Û•\™Ù]
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        super.setFrame(frameRect, display: flag)
+        if tooltipPanel.isVisible {
+            positionTooltip()
+        }
+    }
 
-Bˆš]˜]H˜\ˆ][İNˆ][İHH[˜]˜Z[X›Bˆš]˜]H˜\ˆİ™\•ÛÜšÒ][Nˆ\Ü]ÚÛÜšÒ][OÂ‚ˆ[š]
+    func update(quota: Quota) {
+        self.quota = quota
+        ringView.quota = quota
+        tooltipPanel.update(text: quota == .unavailable ? "Real quota unavailable" : quota.hoverText)
+    }
 
-HÂˆİ\\‹š[š]
-ˆÛÛ[™Xİˆ”Ô™Xİ
-ˆNˆÚYˆ‹ZYÚˆŠKˆİ[SX\ÚÎˆË˜›Ü™\›\ÜË››Û˜Xİ]˜][™Ô[™[Kˆ˜XÚÚ[™Îˆ˜Y™™\™YˆY™\ˆ˜[ÙBˆ
-B‚ˆ\ÓÜ\]YHH˜[ÙBˆ˜XÚÙÜ›İ[™ÛÛÜˆH˜ÛX\‚ˆ\ÔÚYİÈH˜[ÙBˆ]™[H™›Ø][™ÂˆÛÛXİ[Û™Z]š[ÜˆHË˜Ø[’›Ú[[ÜXÙ\Ë™[ØÜ™Y[]^[X\KšYÛ›Ü™\ĞŞXÛWBˆY\ÓÛ‘XXİ]˜]HH˜[ÙBˆYÛ›Ü™\Ó[İ\ÙQ]™[ÈH˜[ÙB‚ˆš[™ÕšY]Ë˜]]Ü™\Ú^š[™ÓX\ÚÈHËÚYšZYÚBˆš[™ÕšY]Ë™œ˜[YHHÛÛ[™Xİ
-›Ü‘œ˜[YT™Xİˆœ˜[YJBˆš[™ÕšY]Ë›Û’İ™\ˆHÈİÙXZÈÙ[—H[ˆÙ[Ëš[™S[İ\ÙQ[\Š
-HBˆš[™ÕšY]Ë›Û’İ™\‘^]HÈİÙXZÈÙ[—H[ˆÙ[Ëš[™S[İ\ÙQ^]
+    private func handleMouseEnter() {
+        onHover?()
+        hoverWorkItem?.cancel()
 
-HBˆš[™ÕšY]Ë˜ÛÛ^Y[T›İšY\ˆHÈİÙXZÈÙ[—H[ˆÙ[Ë›XZÙPÛÛ^Y[J
-HBˆÛÛ[šY]ÈHš[™ÕšY]ÂˆB‚ˆİ™\œšYH[˜ÈÜ™\“İ]
-ÈÙ[™\ˆ[OÊHÂˆYUÛÛ\
+        let item = DispatchWorkItem { [weak self] in self?.showTooltip() }
+        hoverWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16, execute: item)
+    }
 
-Bˆİ\\‹›Ü™\“İ]
-Ù[™\ŠBˆB‚ˆİ™\œšYH[˜ÈÙ]œ˜[YJÈœ˜[YT™Xİˆ”Ô™Xİ\Ü^H›YÎˆ›ÛÛ
-HÂˆİ\\‹œÙ]œ˜[YJœ˜[YT™Xİ\Ü^Nˆ›YÊBˆYˆÛÛ\[™[š\Õš\ÚX›HÂˆÜÚ][Û•ÛÛ\
+    private func handleMouseExit() {
+        hoverWorkItem?.cancel()
+        hoverWorkItem = nil
+        hideTooltip()
+    }
 
-BˆBˆB‚ˆ[˜È\]J][İNˆ][İJHÂˆÙ[‹œ][İHH][İBˆš[™ÕšY]Ëœ][İHH][İBˆÛÛ\[™[\]J^ˆ][İHOH[˜]˜Z[X›HÈ”™X[][İH[˜]˜Z[X›Hˆˆ][İKšİ™\•^
-BˆB‚ˆš]˜]H[˜È[™S[İ\ÙQ[\Š
-HÂˆÛ’İ™\Ê
-Bˆİ™\•ÛÜšÒ][OË˜Ø[˜Ù[
+    private func showTooltip() {
+        guard isVisible else { return }
+        tooltipPanel.update(text: quota == .unavailable ? "Real quota unavailable" : quota.hoverText)
+        positionTooltip()
+        tooltipPanel.orderFrontRegardless()
+    }
 
-B‚ˆ]][HH\Ü]ÚÛÜšÒ][HÈİÙXZÈÙ[—H[ˆÙ[ËœÚİÕÛÛ\
+    private func hideTooltip() {
+        hoverWorkItem?.cancel()
+        hoverWorkItem = nil
+        tooltipPanel.orderOut(nil)
+    }
 
-HBˆİ™\•ÛÜšÒ][HH][Bˆ\Ü]Ú]Y]YK›XZ[‹˜\Ş[˜ĞY\ŠXY[™Nˆ››İÊ
-H
-ÈŒM‹^Xİ]Nˆ][JBˆB‚ˆš]˜]H[˜È[™S[İ\ÙQ^]
+    private func positionTooltip() {
+        guard let screen = screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let size = tooltipPanel.frame.size
 
-HÂˆİ™\•ÛÜšÒ][OË˜Ø[˜Ù[
+        var x = frame.maxX + 8
+        var y = frame.midY - size.height / 2
 
-Bˆİ™\•ÛÜšÒ][HHš[ˆYUÛÛ\
+        if x + size.width > visible.maxX - 6 {
+            x = frame.minX - size.width - 8
+        }
+        y = min(max(y, visible.minY + 6), visible.maxY - size.height - 6)
 
-BˆB‚ˆš]˜]H[˜ÈÚİÕÛÛ\
+        tooltipPanel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
 
-HÂˆİX\™\Õš\ÚX›H[ÙHÈ™]\›ˆBˆÛÛ\[™[\]J^ˆ][İHOH[˜]˜Z[X›HÈ”™X[][İH[˜]˜Z[X›Hˆˆ][İKšİ™\•^
-BˆÜÚ][Û•ÛÛ\
+    private func makeContextMenu() -> NSMenu {
+        let menu = NSMenu(title: "ChatGPT Quota Overlay")
 
-BˆÛÛ\[™[›Ü™\‘œ›Û™YØ\™\ÜÊ
-BˆB‚ˆš]˜]H[˜ÈYUÛÛ\
+        let refresh = NSMenuItem(title: "Refresh quota now", action: #selector(MenuActionTarget.refresh(_:)), keyEquivalent: "")
+        refresh.target = menuTarget
+        menu.addItem(refresh)
 
-HÂˆİ™\•ÛÜšÒ][OË˜Ø[˜Ù[
+        let accessibilityEnabled = accessibilityEnabledProvider?() ?? false
+        let accessibilityTitle = accessibilityEnabled
+            ? "Live window tracking: On"
+            : "Enable live window trackingâ€¦"
+        let accessibility = NSMenuItem(
+            title: accessibilityTitle,
+            action: accessibilityEnabled ? nil : #selector(MenuActionTarget.requestAccessibility(_:)),
+            keyEquivalent: ""
+        )
+        accessibility.target = accessibilityEnabled ? nil : menuTarget
+        accessibility.isEnabled = !accessibilityEnabled
+        menu.addItem(accessibility)
 
-Bˆİ™\•ÛÜšÒ][HHš[ˆÛÛ\[™[›Ü™\“İ]
-š[
-BˆB‚ˆš]˜]H[˜ÈÜÚ][Û•ÛÛ\
+        menu.addItem(.separator())
+        let quit = NSMenuItem(title: "Quit ChatGPT Quota Overlay", action: #selector(MenuActionTarget.quit(_:)), keyEquivalent: "")
+        quit.target = menuTarget
+        menu.addItem(quit)
 
-HÂˆİX\™]ØÜ™Y[ˆHØÜ™Y[ˆÏÈ”ÔØÜ™Y[‹›XZ[ˆ[ÙHÈ™]\›ˆBˆ]š\ÚX›HHØÜ™Y[‹š\ÚX›Qœ˜[YBˆ]Ú^™HHÛÛ\[™[™œ˜[YKœÚ^™B‚ˆ˜\ˆHœ˜[YK›X^
-Èˆ˜\ˆHHœ˜[YK›ZYHHÚ^™KšZYÚÈ‚‚ˆYˆ
-ÈÚ^™KÚYˆš\ÚX›K›X^HˆÂˆHœ˜[YK›Z[–HÚ^™KÚYHˆBˆHHZ[ŠX^
-Kš\ÚX›K›Z[–H
-ÈŠKš\ÚX›K›X^HHÚ^™KšZYÚHŠB‚ˆÛÛ\[™[œÙ]œ˜[YSÜšYÚ[Š”ÔÚ[
-ˆNˆJJBˆB‚ˆš]˜]H[˜ÈXZÙPÛÛ^Y[J
-HOˆ”ÓY[HÂˆ]Y[HH”ÓY[J]NˆÚ]Ô][İHİ™\›^HŠB‚ˆ]™Yœ™\ÚH”ÓY[R][J]Nˆ”™Yœ™\Ú][İH›İÈ‹Xİ[ÛˆÜÙ[XİÜŠY[PXİ[Û•\™Ù]œ™Yœ™\Ú
-ÎŠJKÙ^Q\]Z]˜[[ˆˆŠBˆ™Yœ™\Ú\™Ù]HY[U\™Ù]ˆY[K˜Y][J™Yœ™\Ú
-B‚ˆ]XØÙ\ÜÚXš[]Q[˜X›YHXØÙ\ÜÚXš[]Q[˜X›Y›İšY\Ê
-HÏÈ˜[ÙBˆ]XØÙ\ÜÚXš[]U]HHXØÙ\ÜÚXš[]Q[˜X›YˆÈ“]™HÚ[™İÈ˜XÚÚ[™ÎˆÛˆ‚ˆˆ‘[˜X›H]™HÚ[™İÈ˜XÚÚ[™ø )ˆ‚ˆ]XØÙ\ÜÚXš[]HH”ÓY[R][Jˆ]NˆXØÙ\ÜÚXš[]U]KˆXİ[ÛˆXØÙ\ÜÚXš[]Q[˜X›YÈš[ˆÜÙ[XİÜŠY[PXİ[Û•\™Ù]œ™\]Y\İXØÙ\ÜÚXš[]JÎŠJKˆÙ^Q\]Z]˜[[ˆˆ‚ˆ
-BˆXØÙ\ÜÚXš[]K\™Ù]HXØÙ\ÜÚXš[]Q[˜X›YÈš[ˆY[U\™Ù]ˆXØÙ\ÜÚXš[]Kš\Ñ[˜X›YHXXØÙ\ÜÚXš[]Q[˜X›YˆY[K˜Y][JXØÙ\ÜÚXš[]JB‚ˆY[K˜Y][JœÙ\\˜]ÜŠ
-JBˆ]]Z]H”ÓY[R][J]Nˆ”]Z]Ú]Ô][İHİ™\›^H‹Xİ[ÛˆÜÙ[XİÜŠY[PXİ[Û•\™Ù]œ]Z]
-ÎŠJKÙ^Q\]Z]˜[[ˆˆŠBˆ]Z]\™Ù]HY[U\™Ù]ˆY[K˜Y][J]Z]
-B‚ˆ™]\›ˆY[BˆBŸB
+        return menu
+    }
+}

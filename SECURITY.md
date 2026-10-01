@@ -5,7 +5,7 @@ ChatGPT Quota Overlay is intentionally narrow: read the two Codex quota windows 
 ## Trust boundaries
 
 1. **ChatGPT.app / bundled Codex**
-   - The overlay accepts Codex only from known paths inside recognized `ChatGPT.ap``/`Codex.ap`` bundles (`com.openai.chat` or `com.openai.codex`), and the Codex executable itself must have a valid OpenAI Developer ID signature.
+   - The overlay accepts Codex only from known paths inside recognized `ChatGPT.app`/`Codex.app` bundles (`com.openai.chat` or `com.openai.codex`), and the Codex executable itself must have a valid OpenAI Developer ID signature.
    - Arbitrary PATH binaries are not used.
 
 2. **Codex authentication**
