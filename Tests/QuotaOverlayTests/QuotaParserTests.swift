@@ -7,8 +7,16 @@ final class QuotaParserTests: XCTestCase {
             "rateLimitsByLimitId": [
                 "codex": [
                     "limitId": "codex",
-                    "primary": ["usedPercent": 38, "windowDurationMins": 300],
-                    "secondary": ["usedPercent": 45, "windowDurationMins": 10080]
+                    "primary": [
+                        "usedPercent": 38,
+                        "windowDurationMins": 300,
+                        "resetsAt": 1_790_836_859
+                    ],
+                    "secondary": [
+                        "usedPercent": 45,
+                        "windowDurationMins": 10080,
+                        "resetsAt": 1_791_012_827
+                    ]
                 ]
             ]
         ]
@@ -16,6 +24,16 @@ final class QuotaParserTests: XCTestCase {
         let quota = try XCTUnwrap(QuotaParser.quota(fromRateLimitsResponse: response))
         XCTAssertEqual(quota.fiveHourPercent, 62)
         XCTAssertEqual(quota.weekPercent, 55)
+        XCTAssertEqual(
+            try XCTUnwrap(quota.fiveHourResetsAt).timeIntervalSince1970,
+            1_790_836_859,
+            accuracy: 0.5
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(quota.weekResetsAt).timeIntervalSince1970,
+            1_791_012_827,
+            accuracy: 0.5
+        )
     }
 
     func testWindowOrderDoesNotMatter() throws {

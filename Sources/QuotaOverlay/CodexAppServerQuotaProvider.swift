@@ -212,7 +212,7 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
     }
 
     private func sendInitialize() {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.3.2"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.4"
         sendRequest(
             method: "initialize",
             params: [
@@ -395,11 +395,18 @@ final class CodexAppServerQuotaProvider: QuotaProvider {
             weekPercent: quota.weekPercent,
             freshness: .fresh
         )
+        let previous = lastQuota
         lastCodexSnapshot = snapshot
         lastRefreshAt = Date()
         lastQuota = fresh
         scheduleStaleTransition(from: lastRefreshAt!)
-        emit(fresh)
+
+        // Codex can emit account/rateLimits/updated after every turn even when
+        // the effective quota snapshot did not change. Keep the freshness clock
+        // current but avoid unnecessary menu-bar redraws.
+        if previous != fresh {
+            emit(fresh)
+        }
     }
 
     private func markSourceUnavailable() {
