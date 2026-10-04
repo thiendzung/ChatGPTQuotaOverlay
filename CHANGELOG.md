@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.4
+
+- Replace the ChatGPT sidebar overlay with a compact native macOS menu-bar status item.
+- Remove ChatGPT window tracking, avatar-zone geometry, z-order logic, and Accessibility permission entirely.
+- Show only the binding active quota in the menu bar: e.g. `W 6%` or `5h 12%`.
+- Show both windows and reset times in the menu.
+- Handle accounts where the 5-hour window is absent instead of displaying a fake/empty second meter.
+- Parse `resetsAt` from the structured App Server snapshot.
+- Deduplicate unchanged `account/rateLimits/updated` telemetry before UI redraw.
+- Preserve event-driven refresh, stale-state handling, Start at Login, security hardening, CI, and release packaging.
+- Add tests for binding-limit selection, single-window plans, stale state, and reset timestamps.
+
+
 ## 0.1.3.4
 
 - Centralize widget placement in a named avatar/rail anchor geometry model.
