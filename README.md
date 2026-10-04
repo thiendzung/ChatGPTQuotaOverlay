@@ -1,173 +1,136 @@
-# ChatGPT Quota Overlay v0.1.3.4
+# ChatGPT Quota Overlay v0.1.4
 
 **built by ThienDzung**
 
-A small local macOS companion for ChatGPT Desktop that shows remaining Codex quota in the left icon rail.
+A minimal macOS menu-bar companion for the real Codex / Work quota reported by the Codex App Server.
 
-## UI
+## Why v0.1.4 changed the UI
 
-- Outer blue ring: remaining 5-hour quota.
-- Inner purple ring: remaining weekly quota.
-- Center: remaining percentages, for example \`61 / 55\`.
-- Hover: \`5h 61% · Week 55%\`.
-- Cached/stale quota is deliberately dimmed and the hover text adds \`cached\`.
-- No usable quota data: \`— / —\`.
+The previous sidebar overlay competed with ChatGPT's own dynamic controls, required window tracking, and could collide with temporary icons near the account avatar.
 
-## v0.1.3.4
+v0.1.4 removes that entire class of problems. The app now uses the macOS menu bar, which is a stable system surface and does not depend on ChatGPT's sidebar layout.
 
-v0.1.3.4 makes the widget behave like a stable companion to the account/avatar zone.
+## Compact display
 
-- Placement is defined by a single named avatar-rail anchor model instead of scattered pixel offsets.
-- The widget remains positioned relative to ChatGPT's left rail and profile-avatar zone.
-- With Accessibility enabled, AXObserver move/resize callbacks are the primary live-tracking path, so dragging or resizing ChatGPT moves the widget immediately without polling.
-- Without Accessibility, the app keeps its lower-permission fallback and repositions on normal macOS app/Space/screen lifecycle events.
-- The overlay does not traverse ChatGPT's accessibility tree to find or read the avatar/profile control itself.
-- The right-click menu now shows `Live tracking: On` or `Live tracking: Off — Enable…`.
+The menu bar shows only the **binding active limit** — the active window with the least allowance remaining.
 
-All v0.1.3.3 focus/relaunch fixes remain in place.
+Examples:
 
-### Window behavior
+- `W 6%` — weekly quota is the current limiter.
+- `5h 12%` — the 5-hour window is the current limiter.
+- `~W 6%` — cached/stale weekly value.
+- `—` — no reliable quota is available.
 
-- Switching to another app does not hide the widget just because ChatGPT lost focus.
-- The overlay stays immediately above the tracked ChatGPT window in WindowServer order.
-- Another active app can still cover ChatGPT and the overlay naturally.
-- Minimized, hidden, closed, off-Space, or terminated ChatGPT windows are hidden when their state can be observed.
-- Active Space changes are handled as events; no window polling loop is used.
-- Multi-monitor coordinates are converted using the primary display as the Quartz/AppKit flip axis.
-- Multiple ChatGPT windows are supported: the active/topmost ChatGPT window is preferred, while the last tracked visible window is retained when another app becomes active.
-- Full-screen ChatGPT remains supported through the auxiliary full-screen panel behavior.
+This is intentional: when both a 5-hour and weekly window apply, allowance must remain in both. Showing the smaller remaining window is the most useful single glance.
 
-Without Accessibility permission, window state is refreshed on macOS app/Space/screen lifecycle events. For smooth realtime dragging/resizing, right-click the quota widget and enable **Live tracking**. Accessibility then supplies exact move, resize, focus, minimize, restore, and window-destroy callbacks.
+Hover shows the complete snapshot:
 
-### Quota freshness
+`5h 78% · Week 6%`
 
-The app distinguishes three states:
+Clicking the menu-bar item shows:
 
-- **fresh**: normal rings and digits;
-- **stale/cached**: values remain visible but are dimmed;
-- **unavailable**: \`— / —\`.
+- 5-hour remaining + reset time, when that window exists;
+- weekly remaining + reset time;
+- the current binding limit;
+- stale/cached status;
+- Refresh quota now;
+- Start at Login;
+- Quit.
 
-A successful quota sample becomes stale after 15 minutes if no newer App Server result arrives. App Server failure marks existing values stale immediately. This uses a one-shot deadline, not recurring polling.
-
-### Self-recovery
-
-If the bundled Codex App Server exits, times out, or returns an invalid protocol response:
-
-1. cached data is marked stale;
-2. the broken child process is cleaned up;
-3. no retry loop is started;
-4. the next real event (hover, ChatGPT activation, Codex activity, network recovery, or Mac wake) resolves the OpenAI-signed Codex binary again and starts a fresh App Server.
-
-### Start at Login
-
-Right-click the rings and select \`Start at Login\`.
-
-This uses Apple's \`SMAppService.mainApp\` API on macOS 13+. If macOS requires approval, the menu opens **System Settings > Login Items** using the official ServiceManagement API. No LaunchAgent plist is installed manually.
-
-### CI and releases
-
-GitHub Actions now verifies on macOS:
-
-- shell syntax;
-- \`swift build -c release\`;
-- \`swift test\`;
-- app packaging;
-- plist validity;
-- ad-hoc code-signature integrity.
-
-Tags matching \`v*\` run a release workflow that builds the app, creates a macOS ZIP, writes a SHA-256 file, and publishes a GitHub Release.
-
-There is intentionally **no in-app auto-updater**.
+If the account currently exposes only one usage window, v0.1.4 shows only that real window and does not invent the missing one.
 
 ## Real quota source
 
-The app launches the Codex binary bundled inside an OpenAI-signed ChatGPT/Codex app and uses the local Codex App Server:
+The app launches the Codex binary bundled inside an OpenAI-signed ChatGPT/Codex application and uses:
 
-- \`account/rateLimits/read\`
-- \`account/rateLimits/updated\`
+- `account/rateLimits/read` for the initial/current snapshot;
+- `account/rateLimits/updated` for live changes.
 
-The overlay does **not** read browser cookies, \`~/.codex/auth.json\`, API keys, or Keychain credentials. Full App Server responses are not logged or persisted.
+The selector prefers `rateLimitsByLimitId.codex` and falls back to the compatible `rateLimits` shape.
 
-## Permissions
+The app converts App Server `usedPercent` into remaining percentage.
 
-### Default mode
-
-No special privacy permission is requested at startup.
-
-The app uses public window metadata to position itself when macOS reports relevant lifecycle events. It does not capture screen pixels or inspect conversation text.
-
-### Optional Accessibility
-
-Right-click the quota rings and choose \`Enable live window tracking…\`.
-
-Accessibility is used only to observe the selected ChatGPT window's:
-
-- move / resize;
-- focus changes;
-- minimize / restore;
-- destruction.
-
-The app does not read UI text, the account avatar element, keystrokes, messages, or controls. It reads only top-level window position/size metadata needed to keep the quota panel attached to the avatar zone.
-
-Not required:
-
-- Screen Recording;
-- Full Disk Access;
-- Apple Events automation;
-- microphone or camera;
-- direct Keychain access.
-
-## Refresh policy
+## Refresh model
 
 No continuous polling loop.
 
 - startup: one read;
-- App Server quota event: immediate update;
+- App Server rate-limit event: update immediately;
+- unchanged rate-limit telemetry: freshness is renewed but the UI is not redrawn;
 - Codex session activity: one refresh after a 2-second debounce;
-- ChatGPT activation: refresh if older than 5 minutes;
-- hover: refresh if older than 60 seconds;
+- opening the menu: refresh if older than 60 seconds;
 - Mac wake / network recovery: refresh if older than 5 minutes;
-- minimum spacing between App Server reads: 10 seconds;
-- freshness transition: one-shot at 15 minutes.
+- minimum spacing between explicit reads: 10 seconds;
+- stale transition: one-shot after 15 minutes without a fresh sample.
+
+## Permissions
+
+v0.1.4 needs **no Accessibility permission**.
+
+It also does not require:
+
+- Screen Recording;
+- Full Disk Access;
+- Apple Events / Automation;
+- microphone or camera;
+- direct Keychain access.
+
+The app does not inspect ChatGPT UI elements, conversations, avatar controls, window positions, or screen pixels.
+
+## Authentication and privacy
+
+The overlay itself does not read:
+
+- browser cookies;
+- `~/.codex/auth.json`;
+- API keys;
+- Keychain credentials.
+
+Authentication remains inside the OpenAI-signed Codex child process.
+
+Full App Server responses are not logged or persisted. Only the small rate-limit snapshot required for the UI is retained in memory.
+
+## Start at Login
+
+Click the menu-bar item and choose `Start at Login`.
+
+This uses Apple's `SMAppService.mainApp` API. No custom LaunchAgent is installed.
 
 ## Install / upgrade
 
-\`\`\`bash
+```bash
 chmod +x install.sh
 ./install.sh
-\`\`\`
+```
 
 Installed to:
 
-\`\`\`text
+```text
 ~/Applications/ChatGPT Quota Overlay.app
-\`\`\`
+```
 
-The installer does not use \`sudo\`, does not modify \`ChatGPT.app\`, and does not remove Gatekeeper quarantine attributes.
+The installer does not use `sudo`, modify `ChatGPT.app`, or remove Gatekeeper quarantine attributes.
 
 ## Build and test
 
-\`\`\`bash
+```bash
 swift test
 ./build-app.sh
-\`\`\`
+```
 
-Syntax-only check:
+GitHub CI validates:
 
-\`\`\`bash
-swiftc -frontend -parse Sources/QuotaOverlay/*.swift Tests/QuotaOverlayTests/*.swift
-\`\`\`
-
-Create a release package locally:
-
-\`\`\`bash
-./scripts/package-release.sh
-\`\`\`
+- shell syntax;
+- release build;
+- tests;
+- app packaging;
+- plist;
+- local ad-hoc signature integrity.
 
 ## Compatibility
 
 - macOS 13+
-- ChatGPT/Codex bundle IDs \`com.openai.chat\` or \`com.openai.codex\`
-- Codex App Server \`account/rateLimits/read\`
+- ChatGPT/Codex bundle IDs `com.openai.chat` or `com.openai.codex`
+- Codex App Server rate-limit protocol
 
 This is a local companion app, not an official OpenAI extension.
