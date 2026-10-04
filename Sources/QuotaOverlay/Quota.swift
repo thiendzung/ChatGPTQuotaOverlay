@@ -71,7 +71,7 @@ struct Quota: Equatable {
 
     var statusBarText: String {
         guard freshness != .unavailable, let bindingLimit else {
-            return "—"
+            return "Q —"
         }
         let stalePrefix = freshness == .stale ? "~" : ""
         return "\(stalePrefix)\(bindingLimit.kind.compactLabel) \(bindingLimit.percent)%"

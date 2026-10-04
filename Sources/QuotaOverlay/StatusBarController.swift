@@ -32,14 +32,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
         menu.delegate = self
         statusItem.menu = menu
+        statusItem.length = NSStatusItem.variableLength
+        statusItem.isVisible = true
 
-        if let button = statusItem.button {
-            button.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
-            button.title = "—"
-            button.toolTip = "Codex quota unavailable"
-        }
-
+        configureButton()
         rebuildMenu()
+    }
+
+    func ensureVisible() {
+        statusItem.length = NSStatusItem.variableLength
+        statusItem.isVisible = true
+        configureButton()
     }
 
     func update(quota: Quota) {
@@ -54,6 +57,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
 
         rebuildMenu()
+    }
+
+    private func configureButton() {
+        guard let button = statusItem.button else { return }
+        button.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
+        button.title = quota.statusBarText
+        button.toolTip = quota.freshness == .unavailable
+            ? "Codex quota unavailable"
+            : quota.hoverText
+        button.image = nil
+        button.imagePosition = .noImage
     }
 
     func menuWillOpen(_ menu: NSMenu) {
