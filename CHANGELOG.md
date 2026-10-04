@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4.1
+
+- Create the macOS status item only after `applicationDidFinishLaunching`, instead of during `AppDelegate` construction.
+- Explicitly reassert `NSStatusItem.isVisible` and variable length after the first main-loop turn.
+- Show `Q —` before the first quota sample so the menu-bar item remains identifiable even when quota is temporarily unavailable.
+- Keep the fix one-shot and event-driven; no polling loop.
+
+
 ## 0.1.4
 
 - Replace the ChatGPT sidebar overlay with a compact native macOS menu-bar status item.
