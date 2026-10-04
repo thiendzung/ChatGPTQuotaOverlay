@@ -25,12 +25,12 @@ final class QuotaParserTests: XCTestCase {
         XCTAssertEqual(quota.fiveHourPercent, 62)
         XCTAssertEqual(quota.weekPercent, 55)
         XCTAssertEqual(
-            quota.fiveHourResetsAt?.timeIntervalSince1970,
+            try XCTUnwrap(quota.fiveHourResetsAt).timeIntervalSince1970,
             1_790_836_859,
             accuracy: 0.5
         )
         XCTAssertEqual(
-            quota.weekResetsAt?.timeIntervalSince1970,
+            try XCTUnwrap(quota.weekResetsAt).timeIntervalSince1970,
             1_791_012_827,
             accuracy: 0.5
         )
