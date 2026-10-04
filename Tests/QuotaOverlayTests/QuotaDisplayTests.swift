@@ -42,6 +42,6 @@ final class QuotaDisplayTests: XCTestCase {
     }
 
     func testUnavailableQuotaIsMinimal() {
-        XCTAssertEqual(Quota.unavailable.statusBarText, "—")
+        XCTAssertEqual(Quota.unavailable.statusBarText, "Q —")
     }
 }
