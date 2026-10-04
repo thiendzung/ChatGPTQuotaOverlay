@@ -51,19 +51,33 @@ enum QuotaParser {
 
         let fiveRemaining = fiveHour.map { remaining(fromUsed: $0.usedPercent) }
         let weekRemaining = weekly.map { remaining(fromUsed: $0.usedPercent) }
-        return Quota(fiveHourPercent: fiveRemaining, weekPercent: weekRemaining)
+
+        return Quota(
+            fiveHourPercent: fiveRemaining,
+            weekPercent: weekRemaining,
+            fiveHourResetsAt: fiveHour?.resetsAt,
+            weekResetsAt: weekly?.resetsAt
+        )
     }
 
     private struct Window {
         let usedPercent: Double
         let minutes: Int?
+        let resetsAt: Date?
     }
 
     private static func window(_ raw: Any?) -> Window? {
         guard let object = raw as? [String: Any],
               let used = number(object["usedPercent"]) else { return nil }
+
         let minutes = number(object["windowDurationMins"]).map { Int($0.rounded()) }
-        return Window(usedPercent: used, minutes: minutes)
+        let resetsAt = number(object["resetsAt"]).map { Date(timeIntervalSince1970: $0) }
+
+        return Window(
+            usedPercent: used,
+            minutes: minutes,
+            resetsAt: resetsAt
+        )
     }
 
     private static func number(_ raw: Any?) -> Double? {
