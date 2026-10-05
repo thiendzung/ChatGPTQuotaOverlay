@@ -2,6 +2,13 @@ import XCTest
 @testable import QuotaOverlay
 
 final class QuotaDisplayTests: XCTestCase {
+    func testRequestedMenuBarFormatIsFiveHourThenWeek() {
+        let quota = Quota(fiveHourPercent: 37, weekPercent: 100)
+
+        XCTAssertEqual(quota.statusBarText, "37/100")
+        XCTAssertEqual(quota.hoverText, "5h 37% · Week 100%")
+    }
+
     func testWeeklyBecomesBindingLimitWhenLower() {
         let quota = Quota(fiveHourPercent: 78, weekPercent: 6)
 
