@@ -48,26 +48,99 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     func update(quota: Quota) {
         guard quota != self.quota else { return }
         self.quota = quota
-
-        if let button = statusItem.button {
-            button.title = quota.statusBarText
-            button.toolTip = quota.freshness == .unavailable
-                ? "Codex quota unavailable"
-                : quota.hoverText
-        }
-
+        configureButton()
         rebuildMenu()
     }
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        button.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
-        button.title = quota.statusBarText
+
+        button.attributedTitle = statusBarAttributedTitle()
         button.toolTip = quota.freshness == .unavailable
             ? "Codex quota unavailable"
             : quota.hoverText
         button.image = nil
         button.imagePosition = .noImage
+    }
+
+    private func statusBarAttributedTitle() -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        let stale = quota.freshness == .stale
+        let baseFont = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
+
+        if stale {
+            result.append(
+                NSAttributedString(
+                    string: "~",
+                    attributes: [
+                        .font: baseFont,
+                        .foregroundColor: NSColor.secondaryLabelColor.withAlphaComponent(0.72)
+                    ]
+                )
+            )
+        }
+
+        result.append(
+            statusComponent(
+                quota.fiveHourPercent,
+                alertLevel: quota.fiveHourAlertLevel,
+                stale: stale
+            )
+        )
+
+        result.append(
+            NSAttributedString(
+                string: "/",
+                attributes: [
+                    .font: baseFont,
+                    .foregroundColor: NSColor.secondaryLabelColor.withAlphaComponent(stale ? 0.62 : 0.82)
+                ]
+            )
+        )
+
+        result.append(
+            statusComponent(
+                quota.weekPercent,
+                alertLevel: quota.weekAlertLevel,
+                stale: stale
+            )
+        )
+
+        return result
+    }
+
+    private func statusComponent(
+        _ percent: Int?,
+        alertLevel: QuotaAlertLevel,
+        stale: Bool
+    ) -> NSAttributedString {
+        let text = percent.map(String.init) ?? "—"
+        let weight: NSFont.Weight = alertLevel == .critical ? .bold : .semibold
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: weight)
+
+        let baseColor: NSColor
+        switch alertLevel {
+        case .normal:
+            baseColor = .labelColor
+        case .warning:
+            baseColor = .systemOrange
+        case .critical:
+            baseColor = .systemRed
+        case .unavailable:
+            baseColor = .secondaryLabelColor
+        }
+
+        let color = stale
+            ? baseColor.withAlphaComponent(0.58)
+            : baseColor
+
+        return NSAttributedString(
+            string: text,
+            attributes: [
+                .font: font,
+                .foregroundColor: color
+            ]
+        )
     }
 
     func menuWillOpen(_ menu: NSMenu) {
