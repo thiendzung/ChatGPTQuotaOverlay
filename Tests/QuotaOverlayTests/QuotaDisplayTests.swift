@@ -2,6 +2,23 @@ import XCTest
 @testable import QuotaOverlay
 
 final class QuotaDisplayTests: XCTestCase {
+    func testAlertThresholdsStartBelowFiftyPercent() {
+        XCTAssertEqual(Quota.alertLevel(for: 100), .normal)
+        XCTAssertEqual(Quota.alertLevel(for: 50), .normal)
+        XCTAssertEqual(Quota.alertLevel(for: 49), .warning)
+        XCTAssertEqual(Quota.alertLevel(for: 20), .warning)
+        XCTAssertEqual(Quota.alertLevel(for: 19), .critical)
+        XCTAssertEqual(Quota.alertLevel(for: 0), .critical)
+        XCTAssertEqual(Quota.alertLevel(for: nil), .unavailable)
+    }
+
+    func testFiveHourAndWeekAlertLevelsAreIndependent() {
+        let quota = Quota(fiveHourPercent: 37, weekPercent: 100)
+
+        XCTAssertEqual(quota.fiveHourAlertLevel, .warning)
+        XCTAssertEqual(quota.weekAlertLevel, .normal)
+    }
+
     func testRequestedMenuBarFormatIsFiveHourThenWeek() {
         let quota = Quota(fiveHourPercent: 37, weekPercent: 100)
 
