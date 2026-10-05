@@ -1,5 +1,12 @@
 import Foundation
 
+enum QuotaAlertLevel: Equatable {
+    case normal
+    case warning
+    case critical
+    case unavailable
+}
+
 enum QuotaFreshness: Equatable {
     case fresh
     case stale
@@ -76,6 +83,27 @@ struct Quota: Equatable {
 
     var compactText: String {
         "\(display(fiveHourPercent))/\(display(weekPercent))"
+    }
+
+    static func alertLevel(for percent: Int?) -> QuotaAlertLevel {
+        guard let percent else { return .unavailable }
+
+        switch percent {
+        case 50...:
+            return .normal
+        case 20..<50:
+            return .warning
+        default:
+            return .critical
+        }
+    }
+
+    var fiveHourAlertLevel: QuotaAlertLevel {
+        Self.alertLevel(for: fiveHourPercent)
+    }
+
+    var weekAlertLevel: QuotaAlertLevel {
+        Self.alertLevel(for: weekPercent)
     }
 
     var hoverText: String {
