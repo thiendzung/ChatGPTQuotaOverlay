@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.4.3
+
+- Add independent warning colors for the 5-hour and weekly quota numbers.
+- 50–100% keeps the normal macOS text color.
+- 20–49% turns orange.
+- 0–19% turns red and uses stronger font weight.
+- Missing values stay gray.
+- Cached/stale values keep their warning color but are dimmed.
+- The slash remains neutral so each window is visually separable.
+
+
 ## 0.1.4.2
 
 - Change the menu-bar text from a single limit to the full remaining pair: 5h/week.
@@ -7,15 +18,6 @@
 - Keep explicit labels and percent signs in the hover tooltip and menu details.
 - Show missing windows explicitly, for example 37/— or —/100.
 - Cached/stale values keep the ~ prefix, for example ~37/100.
-
-
-## 0.1.4.2
-
-- Change the menu-bar text from the single binding limit (for example `W 37%`) to the full remaining pair `5h/week`.
-- Example: `37/100` means 37% remaining in the 5-hour window and 100% remaining in the weekly window.
-- Keep full labels and percent signs in the hover tooltip and menu details.
-- Show missing windows explicitly, e.g. `37/—` or `—/100`.
-- Stale cached data keeps the compact `~` prefix, e.g. `~37/100`.
 
 
 ## 0.1.4.1
