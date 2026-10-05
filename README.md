@@ -1,4 +1,4 @@
-# ChatGPT Quota Overlay v0.1.4.2
+# ChatGPT Quota Overlay v0.1.4.3
 
 **built by ThienDzung**
 
@@ -32,6 +32,18 @@ Examples:
 Hover shows the complete snapshot:
 
 `5h 37% · Week 100%`
+
+### Warning colors
+
+Each quota number is colored independently:
+
+- `50–100` → normal macOS text color.
+- `20–49` → orange warning.
+- `0–19` → red critical warning; critical values also use a stronger font weight.
+- Missing values `—` → secondary gray.
+- Cached/stale values keep their warning color but are dimmed and prefixed with `~`.
+
+Example: in `37/100`, only `37` is orange. The slash and `100` remain neutral.
 
 Clicking the menu-bar item shows:
 
