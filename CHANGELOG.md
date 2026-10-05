@@ -2,6 +2,15 @@
 
 ## 0.1.4.2
 
+- Change the menu-bar text from a single limit to the full remaining pair: 5h/week.
+- Example: 37/100 means 37% remaining in the 5-hour window and 100% remaining in the weekly window.
+- Keep explicit labels and percent signs in the hover tooltip and menu details.
+- Show missing windows explicitly, for example 37/— or —/100.
+- Cached/stale values keep the ~ prefix, for example ~37/100.
+
+
+## 0.1.4.2
+
 - Change the menu-bar text from the single binding limit (for example `W 37%`) to the full remaining pair `5h/week`.
 - Example: `37/100` means 37% remaining in the 5-hour window and 100% remaining in the weekly window.
 - Keep full labels and percent signs in the hover tooltip and menu details.
