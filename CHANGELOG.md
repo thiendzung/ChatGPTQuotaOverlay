@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4.2
+
+- Change the menu-bar text from the single binding limit (for example `W 37%`) to the full remaining pair `5h/week`.
+- Example: `37/100` means 37% remaining in the 5-hour window and 100% remaining in the weekly window.
+- Keep full labels and percent signs in the hover tooltip and menu details.
+- Show missing windows explicitly, e.g. `37/—` or `—/100`.
+- Stale cached data keeps the compact `~` prefix, e.g. `~37/100`.
+
+
 ## 0.1.4.1
 
 - Create the macOS status item only after `applicationDidFinishLaunching`, instead of during `AppDelegate` construction.
