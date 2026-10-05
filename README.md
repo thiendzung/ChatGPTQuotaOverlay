@@ -1,4 +1,4 @@
-# ChatGPT Quota Overlay v0.1.4.1
+# ChatGPT Quota Overlay v0.1.4.2
 
 **built by ThienDzung**
 
@@ -8,7 +8,7 @@ A minimal macOS menu-bar companion for the real Codex / Work quota reported by t
 
 The previous sidebar overlay competed with ChatGPT's own dynamic controls, required window tracking, and could collide with temporary icons near the account avatar.
 
-v0.1.4.1 keeps that simplified menu-bar design and fixes status-item startup visibility. The app now uses the macOS menu bar, which is a stable system surface and does not depend on ChatGPT's sidebar layout.
+v0.1.4.2 keeps the simplified menu-bar design and shows both remaining quota windows at a glance. The app now uses the macOS menu bar, which is a stable system surface and does not depend on ChatGPT's sidebar layout.
 
 ## v0.1.4.1 startup fix
 
@@ -16,20 +16,22 @@ The menu-bar item is now created only after AppKit reports that application laun
 
 ## Compact display
 
-The menu bar shows only the **binding active limit** — the active window with the least allowance remaining.
+The menu bar shows both remaining quota windows as:
+
+`5h/week`
 
 Examples:
 
-- `W 6%` — weekly quota is the current limiter.
-- `5h 12%` — the 5-hour window is the current limiter.
-- `~W 6%` — cached/stale weekly value.
-- `Q —` — the app is running but no reliable quota is available yet.
-
-This is intentional: when both a 5-hour and weekly window apply, allowance must remain in both. Showing the smaller remaining window is the most useful single glance.
+- `37/100` = 37% remaining in the 5-hour window, 100% remaining in the weekly window.
+- `78/6` = 78% remaining in 5h, 6% remaining weekly.
+- `~37/100` = cached/stale values.
+- `37/—` = weekly window is not currently exposed.
+- `—/100` = 5-hour window is not currently exposed.
+- `—/—` = no reliable quota is available yet.
 
 Hover shows the complete snapshot:
 
-`5h 78% · Week 6%`
+`5h 37% · Week 100%`
 
 Clicking the menu-bar item shows:
 
