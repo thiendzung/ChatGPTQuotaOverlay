@@ -2,6 +2,13 @@ import XCTest
 @testable import QuotaOverlay
 
 final class QuotaDisplayTests: XCTestCase {
+    func testRequestedMenuBarFormatIsFiveHourThenWeek() {
+        let quota = Quota(fiveHourPercent: 37, weekPercent: 100)
+
+        XCTAssertEqual(quota.statusBarText, "37/100")
+        XCTAssertEqual(quota.hoverText, "5h 37% · Week 100%")
+    }
+
     func testWeeklyBecomesBindingLimitWhenLower() {
         let quota = Quota(fiveHourPercent: 78, weekPercent: 6)
 
@@ -9,7 +16,7 @@ final class QuotaDisplayTests: XCTestCase {
             quota.bindingLimit,
             QuotaBinding(kind: .week, percent: 6)
         )
-        XCTAssertEqual(quota.statusBarText, "W 6%")
+        XCTAssertEqual(quota.statusBarText, "78/6")
         XCTAssertEqual(quota.hoverText, "5h 78% · Week 6%")
     }
 
@@ -20,7 +27,7 @@ final class QuotaDisplayTests: XCTestCase {
             quota.bindingLimit,
             QuotaBinding(kind: .fiveHour, percent: 12)
         )
-        XCTAssertEqual(quota.statusBarText, "5h 12%")
+        XCTAssertEqual(quota.statusBarText, "12/70")
     }
 
     func testSingleWeeklyWindowDoesNotInventFiveHourLimit() {
@@ -30,18 +37,18 @@ final class QuotaDisplayTests: XCTestCase {
             quota.bindingLimit,
             QuotaBinding(kind: .week, percent: 55)
         )
-        XCTAssertEqual(quota.statusBarText, "W 55%")
+        XCTAssertEqual(quota.statusBarText, "—/55")
         XCTAssertEqual(quota.hoverText, "5h unavailable · Week 55%")
     }
 
     func testStaleQuotaIsExplicit() {
         let quota = Quota(fiveHourPercent: 80, weekPercent: 40).markedStale()
 
-        XCTAssertEqual(quota.statusBarText, "~W 40%")
+        XCTAssertEqual(quota.statusBarText, "~80/40")
         XCTAssertTrue(quota.hoverText.contains("cached"))
     }
 
     func testUnavailableQuotaIsMinimal() {
-        XCTAssertEqual(Quota.unavailable.statusBarText, "Q —")
+        XCTAssertEqual(Quota.unavailable.statusBarText, "—/—")
     }
 }

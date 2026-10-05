@@ -70,15 +70,12 @@ struct Quota: Equatable {
     }
 
     var statusBarText: String {
-        guard freshness != .unavailable, let bindingLimit else {
-            return "Q —"
-        }
         let stalePrefix = freshness == .stale ? "~" : ""
-        return "\(stalePrefix)\(bindingLimit.kind.compactLabel) \(bindingLimit.percent)%"
+        return "\(stalePrefix)\(display(fiveHourPercent))/\(display(weekPercent))"
     }
 
     var compactText: String {
-        "\(display(fiveHourPercent))/\(display(weekPercent))%"
+        "\(display(fiveHourPercent))/\(display(weekPercent))"
     }
 
     var hoverText: String {
